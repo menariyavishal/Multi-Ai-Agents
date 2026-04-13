@@ -1,0 +1,22 @@
+{
+  "pythonVersion": "3.13",
+  "typeCheckingMode": "basic",
+  "include": ["backend", "."],
+  "exclude": [
+    "**/.*",
+    "**/node_modules",
+    "**/__pycache__",
+    "**/__pypackages__",
+    ".venv",
+    "venv",
+    "dist",
+    "build",
+    "*.egg-info"
+  ],
+  "extraPaths": ["./backend"],
+  "reportMissingImports": true,
+  "reportMissingTypeStubs": false,
+  "reportGeneralTypeIssues": true,
+  "reportOptionalMemberAccess": true,
+  "reportOptionalSubscript": true
+}
