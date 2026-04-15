@@ -8,22 +8,22 @@ AGENT_TIMEOUT_SECONDS = 25      # Max time for a single agent node
 GRAPH_TIMEOUT_SECONDS = 30      # Max total time for the entire LangGraph
 
 # ========== Model Configuration per Agent ==========
-# OPTIMIZATION: Use Gemini ONLY for Planner to preserve free tier quota
+# OPTIMIZATION: Use Groq for Planner (fastest, most reliable)
 # Other agents use HuggingFace for lightweight inference
-# Note: Tool calling (bind_tools) is ONLY supported by Gemini models.
+# Note: Groq provides free unlimited tier with exceptional speed
 
 MODEL_CONFIGS = {
     "planner": {
-        "provider": "google",
-        "name": "gemini-2.0-flash",          # Gemini used ONLY for planning
-        "temperature": 0.2,
+        "provider": "groq",
+        "name": "llama-3.3-70b-versatile",  # Available Groq model for planning
+        "temperature": 0.3,
         "supports_tools": True
     },
     "researcher": {
-        "provider": "huggingface",          # Switch to HF to save Gemini quota
-        "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",  # Lightweight model
-        "temperature": 0.1,
-        "supports_tools": False             # HF models don't support tools
+        "provider": "huggingface",          # HuggingFace for cost efficiency
+        "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
+        "temperature": 0.2,
+        "supports_tools": False
     },
     "analyst": {
         "provider": "huggingface",
@@ -32,13 +32,13 @@ MODEL_CONFIGS = {
         "supports_tools": False
     },
     "writer": {
-        "provider": "huggingface",          # Switch to HF to save Gemini quota
+        "provider": "huggingface",
         "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
         "temperature": 0.7,
         "supports_tools": False
     },
     "reviewer": {
-        "provider": "huggingface",          # Switch to HF to save Gemini quota
+        "provider": "huggingface",
         "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
         "temperature": 0.0,
         "supports_tools": False

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Test Planner Agent with Gemini API only
-Testing the optimized configuration where Gemini is used ONLY for Planner
+Test Planner Agent with Groq API
+Testing the optimized configuration where Groq is used ONLY for Planner
 """
 import sys
 import os
@@ -16,21 +16,21 @@ from app.config import Config
 logger = get_logger("PlannerTest")
 
 print("=" * 80)
-print("PLANNER AGENT - GEMINI API OPTIMIZATION TEST")
+print("PLANNER AGENT - GROQ API OPTIMIZATION TEST")
 print("=" * 80)
 
 print("\n[CONFIGURATION CHECK]")
 print("-" * 80)
-print(f"Gemini API Key: {'EXISTS' if Config.GEMINI_API_KEY else 'MISSING'}")
-if Config.GEMINI_API_KEY:
-    key_sample = Config.GEMINI_API_KEY[:10] + "..." + Config.GEMINI_API_KEY[-10:]
+print(f"Groq API Key: {'EXISTS' if Config.GROQ_API_KEY else 'MISSING'}")
+if Config.GROQ_API_KEY:
+    key_sample = Config.GROQ_API_KEY[:10] + "..." + Config.GROQ_API_KEY[-10:]
     print(f"  Value: {key_sample}")
 
 print("\n[TEST 1] Initialize Planner LLM Instance")
 print("-" * 80)
 
 try:
-    logger.info("Creating Planner (Gemini) LLM...")
+    logger.info("Creating Planner (Groq) LLM...")
     planner_llm = LLMFactory.get_llm("planner")
     print(f"✓ LLM instance created: {type(planner_llm).__name__}")
     print(f"✓ Model configured for: Planner agent")
@@ -39,13 +39,13 @@ except Exception as e:
     print(f"✗ Failed to initialize: {str(e)[:100]}")
     sys.exit(1)
 
-print("\n[TEST 2] Test Gemini API with Simple Prompt")
+print("\n[TEST 2] Test Groq API with Simple Prompt")
 print("-" * 80)
 
 try:
     test_prompt = "You are a planning agent. Say 'Ready to plan' briefly."
     
-    logger.info(f"Sending prompt to Gemini: '{test_prompt[:50]}...'")
+    logger.info(f"Sending prompt to Groq: '{test_prompt[:50]}...'")
     print(f"Prompt: {test_prompt}")
     print(f"Waiting for response...\n")
     
@@ -56,7 +56,7 @@ try:
     
     if "plan" in response.content.lower() or "ready" in response.content.lower():
         print(f"\n✓ SUCCESS: Planner agent is working!")
-        print(f"✓ Gemini API is operational")
+        print(f"✓ Groq API is operational")
         status = "WORKING"
     else:
         print(f"\n✓ Response received but format unexpected")
@@ -65,22 +65,8 @@ try:
 except Exception as e:
     error_msg = str(e)
     print(f"\n✗ API Error: {error_msg[:200]}")
-    
-    if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
-        print(f"\n⚠️  Status: QUOTA EXCEEDED")
-        print(f"     Free tier quota limit hit")
-        print(f"     Next steps:")
-        print(f"     1. Upgrade to paid Gemini plan")
-        print(f"     2. Wait ~24 hours for quota reset")
-        print(f"     3. Use multiple API keys (rotate them)")
-        status = "QUOTA_EXCEEDED"
-    elif "authentication" in error_msg.lower() or "invalid" in error_msg.lower():
-        print(f"\n✗ Status: AUTH FAILED")
-        print(f"     Invalid API key or credentials")
-        status = "AUTH_FAILED"
-    else:
-        print(f"\n✗ Status: UNKNOWN_ERROR")
-        status = "ERROR"
+    print(f"✗ Status: FAILED")
+    status = "ERROR"
 
 print("\n[TEST 3] Verify Agent Configuration")
 print("-" * 80)

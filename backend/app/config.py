@@ -18,8 +18,8 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
     
     # LLM API Keys
-    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     HF_API_TOKEN = os.environ.get('HF_API_TOKEN')
+    GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
     
     # Database paths (absolute to avoid working directory issues)
     SQLITE_PATH = os.environ.get('SQLITE_PATH', os.path.join(BASE_DIR, 'data', 'nueuro.db'))
@@ -38,8 +38,8 @@ class Config:
         """Raise exceptions if critical config is missing in production."""
         if not cls.SECRET_KEY or cls.SECRET_KEY == 'dev-secret-key-change-in-prod':
             raise ValueError("SECRET_KEY must be set in production")
-        if not cls.GEMINI_API_KEY:
-            raise ValueError("GEMINI_API_KEY is required")
+        if not cls.GROQ_API_KEY:
+            raise ValueError("GROQ_API_KEY is required for Planner agent")
         # HF token is optional for production (if you use HF models)
         # but we'll warn if missing and HF models are configured
         return True

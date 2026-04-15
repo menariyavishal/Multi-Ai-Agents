@@ -1,10 +1,11 @@
 """
 LLM Factory – returns LangChain-compatible chat models.
-Supports Google Gemini, Hugging Face, and Mock LLMs for testing.
+Supports Groq, Hugging Face, and Mock LLMs for testing.
 Implements caching, timeouts, and basic retry logic.
 """
 import os
-from langchain_google_genai import ChatGoogleGenerativeAI
+from pydantic import SecretStr
+from langchain_groq import ChatGroq
 from langchain_huggingface import HuggingFaceEndpoint
 from langchain_core.language_models import BaseLanguageModel
 from app.config import Config
@@ -45,19 +46,7 @@ class LLMFactory:
         model_name = config["name"]
         temperature = config["temperature"]
         
-        if provider == "google":
-            if not Config.GEMINI_API_KEY:
-                raise ValueError("GEMINI_API_KEY is not set. Please add it to .env")
-            llm = ChatGoogleGenerativeAI(
-                model=model_name,
-                google_api_key=Config.GEMINI_API_KEY,
-                temperature=temperature,
-                timeout=Config.LLM_TIMEOUT,
-                max_retries=Config.LLM_MAX_RETRIES
-            )
-            logger.info(f"Created Gemini LLM for {agent_role}")
-            
-        elif provider == "huggingface":
+        if provider == "huggingface":
             if not Config.HF_API_TOKEN:
                 raise ValueError("HF_API_TOKEN is not set. Please add it to .env")
             # Use HuggingFaceEndpoint (langchain-huggingface package - no deprecation warnings)
@@ -68,6 +57,18 @@ class LLMFactory:
                 max_new_tokens=512
             ) # pyright: ignore[reportCallIssue]
             logger.info(f"Created Hugging Face LLM for {agent_role} using {model_name}")
+            
+        elif provider == "groq":
+            if not Config.GROQ_API_KEY:
+                raise ValueError("GROQ_API_KEY is not set. Please add it to .env")
+            llm = ChatGroq(
+                model=model_name,
+                api_key=SecretStr(Config.GROQ_API_KEY),
+                temperature=temperature,
+                timeout=Config.LLM_TIMEOUT,
+                max_retries=Config.LLM_MAX_RETRIES
+            )
+            logger.info(f"Created Groq LLM for {agent_role} using {model_name}")
             
         else:
             raise ValueError(f"Unsupported provider: {provider}")

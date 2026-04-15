@@ -5,7 +5,7 @@ Allows full system testing without hitting API quotas
 from typing import Optional, Any
 from langchain_core.language_models import BaseLLM
 from langchain_core.callbacks.manager import CallbackManagerForLLMRun
-from langchain_core.outputs import LLMResult
+from langchain_core.outputs import LLMResult, Generation
 from langchain_core.messages import AIMessage
 
 class MockLLM(BaseLLM):
@@ -38,7 +38,7 @@ class MockLLM(BaseLLM):
             
             outputs.append(
                 LLMResult(
-                    generations=[[AIMessage(content=response)]],
+                    generations=[[Generation(text=response)]],
                 )
             )
         
