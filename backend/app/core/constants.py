@@ -20,10 +20,10 @@ MODEL_CONFIGS = {
         "supports_tools": True
     },
     "researcher": {
-        "provider": "huggingface",          # HuggingFace for cost efficiency
-        "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "temperature": 0.2,
-        "supports_tools": False
+        "provider": "groq",                 # Groq for intelligent analysis
+        "name": "llama-3.3-70b-versatile",  # Same model as Planner for consistency
+        "temperature": 0.2,                 # More analytical than Planner (0.3)
+        "supports_tools": True
     },
     "analyst": {
         "provider": "huggingface",
