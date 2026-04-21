@@ -18,7 +18,6 @@ class Config:
     SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-prod')
     
     # LLM API Keys
-    HF_API_TOKEN = os.environ.get('HF_API_TOKEN')
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
     
     # Database paths (absolute to avoid working directory issues)

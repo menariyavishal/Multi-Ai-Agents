@@ -18,15 +18,6 @@ def groq_api_key():
 
 
 @pytest.fixture
-def hf_api_token():
-    """Fixture to provide HuggingFace API token from environment."""
-    token = os.getenv('HF_API_TOKEN')
-    if not token:
-        pytest.skip("HF_API_TOKEN not set in environment")
-    return token
-
-
-@pytest.fixture
 def mongodb_uri():
     """Fixture to provide MongoDB URI from environment."""
     uri = os.getenv('MONGODB_URI', 'mongodb://localhost:27017/multi_ai_agents')

@@ -8,39 +8,39 @@ AGENT_TIMEOUT_SECONDS = 25      # Max time for a single agent node
 GRAPH_TIMEOUT_SECONDS = 30      # Max total time for the entire LangGraph
 
 # ========== Model Configuration per Agent ==========
-# OPTIMIZATION: Use Groq for Planner (fastest, most reliable)
-# Other agents use HuggingFace for lightweight inference
-# Note: Groq provides free unlimited tier with exceptional speed
+# All agents now use Groq for consistency and performance
+# - llama-3.3-70b-versatile: Best for analysis & reasoning
+# - Groq provides free unlimited tier with exceptional speed
 
 MODEL_CONFIGS = {
     "planner": {
         "provider": "groq",
-        "name": "llama-3.3-70b-versatile",  # Available Groq model for planning
-        "temperature": 0.3,
+        "name": "llama-3.3-70b-versatile",
+        "temperature": 0.3,  # Balanced: creative planning with focus
         "supports_tools": True
     },
     "researcher": {
-        "provider": "groq",                 # Groq for intelligent analysis
-        "name": "llama-3.3-70b-versatile",  # Same model as Planner for consistency
-        "temperature": 0.2,                 # More analytical than Planner (0.3)
+        "provider": "groq",
+        "name": "llama-3.3-70b-versatile",
+        "temperature": 0.2,  # Analytical: focused data gathering
         "supports_tools": True
     },
     "analyst": {
-        "provider": "huggingface",
-        "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "temperature": 0.1,
+        "provider": "groq",
+        "name": "qwen/qwen3-32b",
+        "temperature": 0.1,  # Precise: deterministic analysis
         "supports_tools": False
     },
     "writer": {
-        "provider": "huggingface",
-        "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "temperature": 0.7,
+        "provider": "groq",
+        "name": "llama-3.3-70b-versatile",
+        "temperature": 0.7,  # Creative: polished writing
         "supports_tools": False
     },
     "reviewer": {
-        "provider": "huggingface",
-        "name": "TinyLlama/TinyLlama-1.1B-Chat-v1.0",
-        "temperature": 0.0,
+        "provider": "groq",
+        "name": "llama-3.3-70b-versatile",
+        "temperature": 0.0,  # Strict: deterministic review
         "supports_tools": False
     }
 }

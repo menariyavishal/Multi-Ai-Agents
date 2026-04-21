@@ -12,10 +12,8 @@ pydantic>=2.0.0                       # Type-safe request/response validation us
 # AI Orchestration & LangGraph
 langchain>=0.2.0                      # LLM orchestration, tool calling, and chain management
 langgraph>=0.1.0                      # State machine for multi-agent workflow (core to our 5-agent pipeline)
-langchain-groq>=0.1.0                 # Groq LLM integration for ultra-fast Planner agent
-langchain-community>=0.0.10           # Community LLM integrations (HuggingFace, Mistral, Llama, Zephyr)
-langchain-huggingface>=0.0.1          # HuggingFace integrations for Endpoint API
-huggingface_hub>=0.16.0               # HuggingFace Hub API client for model inference
+langchain-groq>=0.1.0                 # Groq LLM integration for ultra-fast agents
+langchain-community>=0.0.10           # Community LLM integrations
 
 # Databases & Caching
 pymongo>=4.0.0                        # MongoDB driver for storing chat history and graph state snapshots

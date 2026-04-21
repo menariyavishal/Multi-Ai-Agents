@@ -1,12 +1,11 @@
 """
 LLM Factory – returns LangChain-compatible chat models.
-Supports Groq, Hugging Face, and Mock LLMs for testing.
+Supports Groq and Mock LLMs for testing.
 Implements caching, timeouts, and basic retry logic.
 """
 import os
 from pydantic import SecretStr
 from langchain_groq import ChatGroq
-from langchain_huggingface import HuggingFaceEndpoint
 from langchain_core.language_models import BaseLanguageModel
 from app.config import Config
 from app.core.constants import MODEL_CONFIGS
@@ -46,19 +45,7 @@ class LLMFactory:
         model_name = config["name"]
         temperature = config["temperature"]
         
-        if provider == "huggingface":
-            if not Config.HF_API_TOKEN:
-                raise ValueError("HF_API_TOKEN is not set. Please add it to .env")
-            # Use HuggingFaceEndpoint (langchain-huggingface package - no deprecation warnings)
-            llm = HuggingFaceEndpoint(
-                repo_id=model_name,
-                huggingfacehub_api_token=Config.HF_API_TOKEN,
-                temperature=temperature,
-                max_new_tokens=512
-            ) # pyright: ignore[reportCallIssue]
-            logger.info(f"Created Hugging Face LLM for {agent_role} using {model_name}")
-            
-        elif provider == "groq":
+        if provider == "groq":
             if not Config.GROQ_API_KEY:
                 raise ValueError("GROQ_API_KEY is not set. Please add it to .env")
             llm = ChatGroq(
