@@ -36,6 +36,7 @@ class Researcher(BaseAgent):
         user_id = state.get("user_id", "")
         iteration = state.get("iteration", 1)
         messages = state.get("messages", [])
+        data_type_needed = state.get("data_type_needed", "COMBINED")  # From Planner's intelligence
         
         # Store user_id for use in data gathering methods
         self._current_user_id = user_id
@@ -50,11 +51,12 @@ class Researcher(BaseAgent):
             }
         
         logger.info(f"Researcher analyzing plan for user {user_id} (iteration {iteration})")
+        logger.info(f"Planner indicated data type needed: {data_type_needed}")
         
         try:
-            # Step 1: Analyze plan to determine data sources needed
-            analysis = self._analyze_plan(plan, query)
-            logger.info(f"Plan analysis complete: {analysis['data_type']} data needed")
+            # Step 1: Analyze plan using BOTH Planner's intelligence + Researcher's own reasoning
+            analysis = self._analyze_plan(plan, query, data_type_needed)
+            logger.info(f"Plan analysis complete: {analysis['data_type']} data type determined")
             
             # Step 2: Extract data sources from analysis
             sources = self._parse_sources_from_analysis(analysis)
@@ -92,14 +94,15 @@ class Researcher(BaseAgent):
                 "messages": messages
             }
     
-    def _analyze_plan(self, plan: str, query: str) -> Dict[str, Any]:
-        """Analyze Planner's output to determine data sources needed.
+    def _analyze_plan(self, plan: str, query: str, planner_data_type: str = "COMBINED") -> Dict[str, Any]:
+        """Analyze Planner's output using BOTH Planner's intelligence + Researcher's own reasoning.
         
-        Sends the plan to LLM asking what data sources are required.
+        Validates Planner's data type determination with intelligent analysis.
         
         Args:
             plan: The Planner's detailed plan
             query: The original user query
+            planner_data_type: Data type determined by Planner (REAL_TIME/HISTORICAL/COMBINED)
         
         Returns:
             Dictionary with:
@@ -108,69 +111,85 @@ class Researcher(BaseAgent):
                 - reasoning: Why these sources are needed
                 - data_to_gather: Specific data needed
         """
-        prompt = f"""You are a Research Agent. A Planner has created a detailed plan.
+        prompt = f"""You are a Research Agent. A Planner has analyzed the task and determined the data type needed.
 
 ORIGINAL QUERY: {query}
 
 PLANNER'S PLAN:
 {plan}
 
-Analyze this plan and determine what data sources are needed:
+PLANNER'S INTELLIGENCE: Data type needed = {planner_data_type}
 
-1. DATA SOURCES needed?
-   - MCP_SERVERS: For REAL-TIME/CURRENT data (latest, live, today, 2026)
-   - DATABASE: For HISTORICAL/PAST data (evolution, history, past, patterns)
-   - BOTH: If plan mentions comparing or needs both current and historical
+Your task: Use intelligent analysis to validate/refine the Planner's determination.
 
-2. WHY these sources based on the plan?
+INTELLIGENT DECISION-MAKING RULES:
+- REAL_TIME needed if: Query asks for current/live/today/latest/now information, weather today, stock prices now, news today
+- HISTORICAL needed if: Query asks for history/evolution/past/patterns/how it changed over time, historical data
+- COMBINED needed if: Query requires both current AND past for comparison/trends/analysis
 
-3. What specific data to gather?
+Example intelligent decisions (NOT keyword-based):
+- "Show weather today" -> REAL_TIME (even if word "history" appears elsewhere)
+- "How did Bitcoin evolve?" -> HISTORICAL (focuses on past evolution)
+- "Is Bitcoin doing better than in 2020?" -> COMBINED (compares past vs present)
+- "Latest AI news" -> REAL_TIME (needs current news)
+- "History of AI" -> HISTORICAL (past development)
 
-4. How will you combine the data?
+Analyze deeply based on WHAT THE QUERY TRULY ASKS FOR, not just keywords.
 
-Format your answer as:
-DATA_SOURCES: [MCP_SERVERS / DATABASE / BOTH]
-DATA_TYPE: [REAL_TIME / HISTORICAL / COMBINED]
-REASONING: [Your explanation]
-DATA_TO_GATHER: [List specific data needed]
-COMBINATION_STRATEGY: [How to combine if using multiple sources]
+FINAL DETERMINATION (be concise):
+DATA_TYPE_FINAL: [Choose: REAL_TIME / HISTORICAL / COMBINED based on your intelligence]
+REASONING: [Why this type based on query nature, not keywords]
+DATA_TO_GATHER: [What specific data needed]
 """
         
         try:
             response = self.llm.invoke(prompt)
             content = response.content if hasattr(response, 'content') else str(response)
             
-            # Parse response
-            analysis = self._parse_analysis_response(content)
-            logger.info(f"Plan analysis: {analysis['data_type']}")
+            # Parse response using intelligent parsing (not keyword-based)
+            analysis = self._parse_intelligent_analysis(content, planner_data_type)
+            logger.info(f"Researcher's intelligent analysis: {analysis['data_type']} (Planner suggested: {planner_data_type})")
             
             return analysis
             
         except Exception as e:
-            logger.error(f"Error analyzing plan: {str(e)}")
-            # Default to COMBINED if analysis fails
+            logger.error(f"Error in intelligent analysis: {str(e)}")
+            # Fall back to Planner's assessment if Researcher analysis fails
             return {
-                "data_type": "COMBINED",
-                "sources": ["MCP_SERVERS", "DATABASE"],
-                "reasoning": "Default: gathering both current and historical data",
-                "data_to_gather": "Comprehensive data from all sources"
+                "data_type": planner_data_type,
+                "sources": self._get_sources_from_type(planner_data_type),
+                "reasoning": f"Using Planner's assessment ({planner_data_type}) due to analysis error",
+                "data_to_gather": "Comprehensive data as per plan requirements"
             }
     
-    def _parse_analysis_response(self, response: str) -> Dict[str, Any]:
-        """Parse LLM response to extract analysis."""
+    def _parse_intelligent_analysis(self, response: str, planner_assessment: str) -> Dict[str, Any]:
+        """Parse Researcher's intelligent analysis (NOT keyword-based).
+        
+        Extracts the Researcher's own reasoning, not just pattern matching.
+        """
         response_lower = response.lower()
         
-        # Determine data type
-        if "both" in response_lower:
-            data_type = "COMBINED"
-        elif "mcp_servers" in response_lower and "database" not in response_lower:
-            data_type = "REAL_TIME"
-        elif "database" in response_lower and "mcp_servers" not in response_lower:
-            data_type = "HISTORICAL"
-        else:
-            data_type = "COMBINED"
+        # Look for explicit DATA_TYPE_FINAL in response
+        final_data_type = None
+        if "data_type_final:" in response_lower:
+            lines = response.split("\n")
+            for line in lines:
+                if "data_type_final:" in line.lower():
+                    data_type_str = line.split(":")[-1].strip().upper()
+                    # Extract just the data type (e.g., "REAL_TIME" from "REAL_TIME / reason")
+                    for dt in ["REAL_TIME", "HISTORICAL", "COMBINED"]:
+                        if dt in data_type_str:
+                            final_data_type = dt
+                            break
+                    if final_data_type:
+                        break
         
-        # Extract reasoning (everything after "REASONING:")
+        # Fallback to Planner's assessment if Researcher couldn't determine
+        if not final_data_type:
+            logger.warning(f"Could not extract Researcher's assessment, using Planner's: {planner_assessment}")
+            final_data_type = planner_assessment
+        
+        # Extract reasoning
         reasoning = response
         if "reasoning:" in response_lower:
             reasoning = response.split("REASONING:")[-1]
@@ -181,35 +200,34 @@ COMBINATION_STRATEGY: [How to combine if using multiple sources]
         # Extract data to gather
         data_to_gather = ""
         if "data_to_gather:" in response_lower:
-            data_to_gather = response.split("DATA_TO_GATHER:")[-1]
-            if "COMBINATION_STRATEGY:" in data_to_gather:
-                data_to_gather = data_to_gather.split("COMBINATION_STRATEGY:")[0]
-            data_to_gather = data_to_gather.strip()
-        
-        # Build sources list
-        sources = []
-        if "mcp_servers" in response_lower:
-            sources.append("MCP_SERVERS")
-        if "database" in response_lower:
-            sources.append("DATABASE")
+            data_to_gather = response.split("DATA_TO_GATHER:")[-1].strip()
         
         return {
-            "data_type": data_type,
-            "sources": sources,
-            "reasoning": reasoning or "Determined based on plan analysis",
-            "data_to_gather": data_to_gather or "Comprehensive data as per plan requirements"
+            "data_type": final_data_type,
+            "sources": self._get_sources_from_type(final_data_type),
+            "reasoning": reasoning or f"Intelligent analysis determined {final_data_type} data needed",
+            "data_to_gather": data_to_gather or "Comprehensive data as per intelligent assessment"
         }
     
-    def _parse_sources_from_analysis(self, analysis: Dict[str, Any]) -> list:
-        """Extract data sources from analysis."""
-        data_type = analysis.get("data_type", "COMBINED")
+    def _get_sources_from_type(self, data_type: str) -> list:
+        """Map data type to source list.
         
+        Args:
+            data_type: "REAL_TIME", "HISTORICAL", or "COMBINED"
+        
+        Returns:
+            List of source names to gather from
+        """
         if data_type == "REAL_TIME":
             return ["MCP_SERVERS"]
         elif data_type == "HISTORICAL":
             return ["DATABASE"]
         else:  # COMBINED
             return ["MCP_SERVERS", "DATABASE"]
+    
+    def _parse_sources_from_analysis(self, analysis: Dict[str, Any]) -> list:
+        """Extract data sources from analysis."""
+        return analysis.get("sources", ["MCP_SERVERS", "DATABASE"])
     
     def _gather_data(self, sources: list, query: str, plan: str) -> Dict[str, str]:
         """Gather data from specified sources (mock implementation).

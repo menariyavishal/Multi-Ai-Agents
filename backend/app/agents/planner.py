@@ -50,11 +50,16 @@ class Planner(BaseAgent):
             response = self.llm.invoke(prompt)
             plan = response.content if hasattr(response, 'content') else str(response)
             
+            # Extract data type needed from Planner's analysis
+            data_type_needed = self._extract_data_type_needed(plan)
+            logger.info(f"Planner determined data type needed: {data_type_needed}")
+            
             logger.info(f"Planner successfully generated plan ({len(plan)} chars)")
             
             return {
                 **state,
                 "plan": plan,
+                "data_type_needed": data_type_needed,  # Pass Planner's intelligence to Researcher
                 "planner_complete": True,
                 "messages": state.get("messages", []) + [
                     {"role": "assistant", "content": f"Plan: {plan[:200]}..."}
@@ -66,9 +71,35 @@ class Planner(BaseAgent):
             return {
                 **state,
                 "plan": f"Error generating plan: {str(e)}",
+                "data_type_needed": "COMBINED",  # Default to COMBINED on error
                 "planner_complete": True,
                 "error": str(e)
             }
+    
+    def _extract_data_type_needed(self, plan: str) -> str:
+        """Extract DATA_TYPE_NEEDED from Planner's plan analysis.
+        
+        Args:
+            plan: The full plan output from LLM
+        
+        Returns:
+            "REAL_TIME", "HISTORICAL", or "COMBINED"
+        """
+        plan_lower = plan.lower()
+        
+        # Look for explicit DATA_TYPE_NEEDED in response
+        if "data_type_needed:" in plan_lower:
+            lines = plan.split("\n")
+            for line in lines:
+                if "data_type_needed:" in line.lower():
+                    # Extract the value after the colon
+                    data_type = line.split(":")[-1].strip().upper()
+                    if data_type in ["REAL_TIME", "HISTORICAL", "COMBINED"]:
+                        return data_type
+        
+        # Fallback: default to COMBINED if extraction fails
+        logger.warning("Could not extract DATA_TYPE_NEEDED from Planner output, defaulting to COMBINED")
+        return "COMBINED"
     
     def _build_planning_prompt(self, query: str, context: str, iteration: int) -> str:
         """Build a comprehensive planning prompt.
@@ -96,6 +127,26 @@ Please generate a detailed, structured plan that includes:
 4. **Timeline** - Approximate timeline for each phase
 5. **Potential Risks** - Challenges to consider
 6. **Success Metrics** - How to measure success
+
+**CRITICAL: Data Requirements Analysis**
+Before finalizing the plan, analyze what data is required:
+
+Determine DATA_TYPE_NEEDED based on the task nature:
+- REAL_TIME: If plan requires current/live/latest information from APIs or web
+- HISTORICAL: If plan requires past data, history, patterns, evolution, stored data
+- COMBINED: If plan requires BOTH current and historical data for comparison or context
+
+Reasoning: Analyze the task deeply. Does it need:
+- Today's weather? -> REAL_TIME
+- History of stock prices over 5 years? -> HISTORICAL  
+- Comparing today's market vs historical trends? -> COMBINED
+- Latest news today? -> REAL_TIME
+- How AI evolved? -> HISTORICAL
+- Current AI trends vs historical development? -> COMBINED
+
+At the END of your response, add:
+DATA_TYPE_NEEDED: [REAL_TIME/HISTORICAL/COMBINED]
+DATA_REASONING: [Brief explanation of why this data type]
 
 Provide a thorough, actionable plan that can guide execution."""
         
