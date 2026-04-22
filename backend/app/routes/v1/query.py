@@ -2,6 +2,7 @@
 
 from flask import Blueprint, request, jsonify, g
 from app.services.workflow_manager import get_workflow_manager
+from app.services.db_service import get_db_service
 from app.core.logger import get_logger
 import uuid
 import time
@@ -110,6 +111,45 @@ def process_query():
         elapsed = time.time() - start_time
         logger.info(f"[{session_id}] Query processed successfully in {elapsed:.2f}s")
         
+        # Extract agent outputs and metadata for persistence
+        agent_outputs = {
+            "plan": result.get("plan", ""),
+            "research": result.get("research", ""),
+            "analysis": result.get("analysis", ""),
+            "draft": result.get("draft", ""),
+            "review_feedback": result.get("review_feedback", {}),
+            "routing_decision": result.get("routing_decision", "")
+        }
+        
+        quality_score = result.get("final_quality_score", None)
+        iterations_used = result.get("final_iteration_count", 1)
+        
+        # Save to SQLite history (user_id optional for now)
+        db_service = get_db_service()
+        query_id = db_service.save_query_history(
+            user_id="anonymous",  # Will be replaced with authenticated user_id
+            query_text=query,
+            session_id=session_id,
+            agent_outputs=agent_outputs,
+            status="completed",
+            execution_time_seconds=elapsed,
+            iterations_used=iterations_used,
+            quality_score=quality_score
+        )
+        
+        # Save full workflow state to MongoDB
+        db_service.save_full_state_to_mongo(
+            session_id=session_id,
+            query=query,
+            workflow_state=result,
+            user_id="anonymous",
+            final_answer=result.get("final_answer", ""),
+            execution_time_seconds=elapsed,
+            status="completed"
+        )
+        
+        logger.info(f"[{session_id}] Query history saved (id: {query_id})")
+        
         return jsonify({
             "status": "success",
             "session_id": session_id,
@@ -120,6 +160,17 @@ def process_query():
     except Exception as e:
         elapsed = time.time() - start_time
         logger.error(f"[{session_id}] Query processing failed: {str(e)}", exc_info=True)
+        
+        # Save error to history
+        db_service = get_db_service()
+        db_service.save_query_history(
+            user_id="anonymous",
+            query_text=query,
+            session_id=session_id,
+            status="failed",
+            error_message=str(e),
+            execution_time_seconds=elapsed
+        )
         
         return jsonify({
             "status": "error",

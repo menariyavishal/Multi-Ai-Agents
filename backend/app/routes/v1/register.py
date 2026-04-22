@@ -2,6 +2,7 @@
 
 from flask import Blueprint, request, jsonify
 from app.core.logger import get_logger
+from app.services.db_service import get_db_service
 import uuid
 import hashlib
 
@@ -81,19 +82,26 @@ def register_user():
                 "api_key": None
             }), 400
         
-        # In a full implementation, check for existing user
-        # For now, generate new IDs
-        
-        user_id = str(uuid.uuid4())
-        api_key = f"sk_{uuid.uuid4().hex[:32]}"
-        
         # Hash password (in production, use bcrypt or argon2)
         password_hash = hashlib.sha256(password.encode()).hexdigest()
         
-        logger.info(f"Registering new user: {username} ({user_id})")
+        # Register user in database
+        db_service = get_db_service()
+        api_key = db_service.register_user(username, email, password_hash)
         
-        # In a full implementation, save to database
-        # For now, return success
+        if api_key is None:
+            logger.warning(f"User registration failed (duplicate): {username}")
+            return jsonify({
+                "status": "error",
+                "error": "Username or email already registered",
+                "user_id": None,
+                "api_key": None
+            }), 409
+        
+        # Validate the key to get user_id
+        user_id = db_service.validate_api_key(api_key)
+        
+        logger.info(f"User registered successfully: {username}")
         
         return jsonify({
             "status": "success",
@@ -154,15 +162,15 @@ def validate_api_key():
         
         logger.info(f"Validating API key: {api_key[:20]}...")
         
-        # In a full implementation, check against database
-        # For now, basic validation
-        is_valid = api_key.startswith("sk_") and len(api_key) > 20
+        # Validate against database
+        db_service = get_db_service()
+        user_id = db_service.validate_api_key(api_key)
         
-        if is_valid:
+        if user_id:
             return jsonify({
                 "status": "success",
                 "valid": True,
-                "user_id": str(uuid.uuid4()),
+                "user_id": user_id,
                 "message": "API key is valid"
             }), 200
         else:

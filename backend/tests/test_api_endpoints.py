@@ -223,11 +223,13 @@ class TestRegisterEndpoint:
     
     def test_register_valid(self, client):
         """Test valid registration."""
+        import uuid
+        unique_id = str(uuid.uuid4())[:8]
         response = client.post(
             '/api/v1/register',
             json={
-                "username": "testuser",
-                "email": "test@example.com",
+                "username": f"testuser_{unique_id}",
+                "email": f"test_{unique_id}@example.com",
                 "password": "securepassword123"
             }
         )
