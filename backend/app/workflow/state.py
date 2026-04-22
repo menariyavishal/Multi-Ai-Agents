@@ -80,12 +80,13 @@ class WorkflowState(TypedDict, total=False):
     """Total execution time in seconds."""
 
 
-def create_initial_state(query: str, max_iterations: int = 3) -> WorkflowState:
+def create_initial_state(query: str, max_iterations: int = 3, user_id: str = "") -> WorkflowState:
     """Create initial workflow state from user query.
     
     Args:
         query: The user's question/request
         max_iterations: Maximum revision cycles allowed (default 3)
+        user_id: User identifier for database context (optional)
     
     Returns:
         Initialized WorkflowState ready for first agent
@@ -94,7 +95,7 @@ def create_initial_state(query: str, max_iterations: int = 3) -> WorkflowState:
     
     return WorkflowState(
         query=query,
-        user_id="",  # Will be set by caller if available
+        user_id=user_id,  # User identifier for database context and conversation history
         iteration=1,
         max_iterations=max_iterations,
         plan="",

@@ -20,16 +20,16 @@ class Conversation(BaseModel):
     query: str  # The user's original question
     
     # Agent responses
-    plan: str
-    research: str
-    content: str
-    analysis: Dict[str, Any]
-    final_output: str
+    plan: str = ""  # Planner's comprehensive plan
+    research: str = ""  # Researcher's gathered data and analysis
+    content: str = ""  # Final content/answer
+    analysis: Dict[str, Any] = Field(default_factory=dict)  # Analyst's insights
+    final_output: str = ""  # Writer's final output
     
     # Metadata
-    data_classification: str  # REAL_TIME, HISTORICAL, COMBINED
-    quality_score: float  # 0.0 - 1.0
-    quality_level: str  # high, medium, low
+    data_classification: str = "COMBINED"  # REAL_TIME, HISTORICAL, COMBINED
+    quality_score: float = 0.0  # 0.0 - 1.0
+    quality_level: str = "medium"  # high, medium, low
     
     # Timing
     created_at: datetime = Field(default_factory=datetime.utcnow)

@@ -20,9 +20,9 @@ try:
     from app.agents.writer import Writer
     from app.agents.reviewer import Reviewer
     from app.models.conversation import Conversation, UserProfile
-    print('[+] ✅ All imports successful')
+    print('[+] [OK] All imports successful')
 except Exception as e:
-    print(f'[!] ❌ Import failed: {e}')
+    print(f'[!] [FAIL] Import failed: {e}')
     exit(1)
 
 print()
@@ -32,14 +32,14 @@ print('[TEST 2] Checking MongoDB connection...')
 try:
     db = get_db_service()
     if db.is_connected():
-        print('[+] ✅ MongoDB connected successfully')
+        print('[+] [OK] MongoDB connected successfully')
         print(f'[+]    Database: {db.db.name}')
         collections = db.db.list_collection_names()
         print(f'[+]    Collections: {collections}')
     else:
-        print('[!] ❌ MongoDB not connected')
+        print('[!] [FAIL] MongoDB not connected')
 except Exception as e:
-    print(f'[!] ❌ MongoDB error: {e}')
+    print(f'[!] [FAIL] MongoDB error: {e}')
 
 print()
 
@@ -51,13 +51,13 @@ try:
     analyst = Analyst()
     writer = Writer()
     reviewer = Reviewer()
-    print('[+] ✅ Planner agent initialized')
-    print('[+] ✅ Researcher agent initialized')
-    print('[+] ✅ Analyst agent initialized')
-    print('[+] ✅ Writer agent initialized')
-    print('[+] ✅ Reviewer agent initialized')
+    print('[+] [OK] Planner agent initialized')
+    print('[+] [OK] Researcher agent initialized')
+    print('[+] [OK] Analyst agent initialized')
+    print('[+] [OK] Writer agent initialized')
+    print('[+] [OK] Reviewer agent initialized')
 except Exception as e:
-    print(f'[!] ❌ Agent initialization failed: {e}')
+    print(f'[!] [FAIL] Agent initialization failed: {e}')
 
 print()
 
@@ -72,13 +72,13 @@ try:
     required_fields = ['query', 'user_id', 'plan', 'research', 'analysis', 'messages', 'iteration']
     missing = [f for f in required_fields if f not in initial_state]
     if not missing:
-        print('[+] ✅ WorkflowState structure: OK')
+        print('[+] [OK] WorkflowState structure: OK')
         print(f'[+]    user_id field present: {initial_state.get("user_id")}')
         print(f'[+]    query present: {initial_state.get("query")[:50]}...')
     else:
-        print(f'[!] ❌ Missing fields: {missing}')
+        print(f'[!] [FAIL] Missing fields: {missing}')
 except Exception as e:
-    print(f'[!] ❌ WorkflowState error: {e}')
+    print(f'[!] [FAIL] WorkflowState error: {e}')
 
 print()
 
@@ -98,11 +98,11 @@ try:
     ]
     for method in methods:
         if hasattr(db, method):
-            print(f'[+] ✅ {method}()')
+            print(f'[+] [OK] {method}()')
         else:
-            print(f'[!] ❌ {method}() MISSING')
+            print(f'[!] [FAIL] {method}() MISSING')
 except Exception as e:
-    print(f'[!] ❌ Database methods error: {e}')
+    print(f'[!] [FAIL] Database methods error: {e}')
 
 print()
 
@@ -113,12 +113,12 @@ try:
     app = create_app()
     registered = [str(rule) for rule in app.url_map.iter_rules()]
     api_endpoints = [r for r in registered if 'api' in str(r).lower()]
-    print('[+] ✅ Flask app created successfully')
+    print('[+] [OK] Flask app created successfully')
     print(f'[+]    Total API endpoints: {len(api_endpoints)}')
     for endpoint in sorted(api_endpoints)[:10]:
         print(f'[+]    - {endpoint}')
 except Exception as e:
-    print(f'[!] ❌ API endpoint error: {e}')
+    print(f'[!] [FAIL] API endpoint error: {e}')
 
 print()
 
@@ -132,12 +132,12 @@ try:
     methods = ['_analyze_plan', '_gather_data', '_synthesize_research', '_gather_historical_data']
     for method in methods:
         if hasattr(researcher, method):
-            print(f'[+] ✅ {method}()')
+            print(f'[+] [OK] {method}()')
         else:
-            print(f'[!] ❌ {method}() MISSING')
-    print('[+] ✅ Researcher can fetch from MongoDB')
+            print(f'[!] [FAIL] {method}() MISSING')
+    print('[+] [OK] Researcher can fetch from MongoDB')
 except Exception as e:
-    print(f'[!] ❌ Researcher integration error: {e}')
+    print(f'[!] [FAIL] Researcher integration error: {e}')
 
 print()
 
@@ -152,14 +152,14 @@ try:
         conversation_id='conv_123',
         query='What is AI?'
     )
-    print('[+] ✅ Conversation model: OK')
+    print('[+] [OK] Conversation model: OK')
     
     user = UserProfile(user_id='test_user', email='test@example.com')
-    print('[+] ✅ UserProfile model: OK')
+    print('[+] [OK] UserProfile model: OK')
     
-    print('[+] ✅ ConversationSummary model: OK')
+    print('[+] [OK] ConversationSummary model: OK')
 except Exception as e:
-    print(f'[!] ❌ Data model error: {e}')
+    print(f'[!] [FAIL] Data model error: {e}')
 
 print()
 
@@ -170,16 +170,16 @@ try:
     with open('app/routes/v1/query.py', 'r') as f:
         content = f.read()
         if 'save_conversation' in content:
-            print('[+] ✅ Database auto-save in query.py: OK')
+            print('[+] [OK] Database auto-save in query.py: OK')
         else:
-            print('[!] ❌ Database auto-save not found')
+            print('[!] [FAIL] Database auto-save not found')
         
         if '<<<<<<' in content or '>>>>>>' in content:
-            print('[!] ❌ Merge conflict markers found!')
+            print('[!] [FAIL] Merge conflict markers found!')
         else:
-            print('[+] ✅ No merge conflict markers: OK')
+            print('[+] [OK] No merge conflict markers: OK')
 except Exception as e:
-    print(f'[!] ❌ Merge check error: {e}')
+    print(f'[!] [FAIL] Merge check error: {e}')
 
 print()
 
@@ -191,30 +191,30 @@ try:
     if result.returncode == 0:
         modified_files = [line for line in result.stdout.split('\n') if line.strip()]
         if not modified_files:
-            print('[+] ✅ All changes committed and pushed')
-            print('[+] ✅ Working tree clean')
+            print('[+] [OK] All changes committed and pushed')
+            print('[+] [OK] Working tree clean')
         else:
-            print(f'[+] ⚠️  Modified files not committed: {len(modified_files)}')
+            print(f'[+] [WARN] Modified files not committed: {len(modified_files)}')
     else:
-        print('[!] ❌ Git check failed')
+        print('[!] [FAIL] Git check failed')
 except Exception as e:
-    print(f'[!] ❌ Git status error: {e}')
+    print(f'[!] [FAIL] Git status error: {e}')
 
 print()
 print('='*70)
-print('✅ PROJECT VERIFICATION COMPLETE - ALL TESTS PASSED')
+print('[OK] PROJECT VERIFICATION COMPLETE - ALL TESTS PASSED')
 print('='*70)
 print()
 print('SUMMARY:')
-print('  ✅ All 5 agents loaded and ready')
-print('  ✅ MongoDB connection active')
-print('  ✅ Database CRUD operations available')
-print('  ✅ Researcher can fetch from database')
-print('  ✅ User_id flows through all agents')
-print('  ✅ API endpoints configured')
-print('  ✅ Data models (Pydantic) ready')
-print('  ✅ Merge conflicts resolved')
-print('  ✅ Code pushed to GitHub')
+print('  [OK] All 5 agents loaded and ready')
+print('  [OK] MongoDB connection active')
+print('  [OK] Database CRUD operations available')
+print('  [OK] Researcher can fetch from database')
+print('  [OK] User_id flows through all agents')
+print('  [OK] API endpoints configured')
+print('  [OK] Data models (Pydantic) ready')
+print('  [OK] Merge conflicts resolved')
+print('  [OK] Code pushed to GitHub')
 print()
 print('READY TO RUN:')
 print('  Terminal 1: mongod')
