@@ -70,6 +70,7 @@ class Researcher(BaseAgent):
             return {
                 **state,
                 "research": research,
+                "data_classification": analysis.get("data_type", "COMBINED"),  # Pass classification to Analyst
                 "researcher_complete": True,
                 "messages": messages + [
                     {"role": "assistant", "content": f"Research: {research[:200]}..."}
@@ -81,6 +82,7 @@ class Researcher(BaseAgent):
             return {
                 **state,
                 "research": f"Error generating research: {str(e)}",
+                "data_classification": "COMBINED",  # Default to COMBINED on error
                 "researcher_complete": True,
                 "messages": messages
             }

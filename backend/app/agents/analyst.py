@@ -58,6 +58,10 @@ class Analyst(BaseAgent):
         
         logger.info(f"Analyst processing research findings (iteration {iteration})")
         
+        # Get data classification from state (from Researcher's analysis)
+        data_classification = state.get("data_classification", "COMBINED")  # Default to COMBINED
+        logger.info(f"Data classification: {data_classification}")
+        
         try:
             # Step 1: Validate and parse research data
             parsed_research = self._parse_research_data(research)
@@ -81,8 +85,8 @@ class Analyst(BaseAgent):
             )
             logger.info(f"Insights generated: {len(insights['insights'])} insights, confidence: {insights['confidence_level']}")
             
-            # Step 5: Assess data quality
-            data_quality = self._assess_data_quality(parsed_research, patterns, statistics)
+            # Step 5: Assess data quality (now query-aware based on classification)
+            data_quality = self._assess_data_quality(parsed_research, patterns, statistics, data_classification)
             logger.info(f"Data quality assessed: {data_quality['quality_level']}")
             
             # Step 6: Generate recommendations
@@ -326,20 +330,41 @@ IMPORTANT: Return ONLY valid JSON, no additional text."""
         self,
         parsed_research: Dict[str, str],
         patterns: List[str],
-        statistics: Dict[str, Any]
+        statistics: Dict[str, Any],
+        data_classification: str = "COMBINED"
     ) -> Dict[str, Any]:
-        """Assess the quality and completeness of research data.
+        """Assess the quality and completeness of research data (QUERY-AWARE).
+        
+        Now considers the data classification to fairly assess coverage:
+        - REAL_TIME: Expects 1 source (real-time only)
+        - HISTORICAL: Expects 2 sources (historical + context)
+        - COMBINED: Expects all 3 sources (complete coverage)
         
         Args:
             parsed_research: Parsed research sections
             patterns: Identified patterns
             statistics: Calculated statistics
+            data_classification: Type of data needed (REAL_TIME, HISTORICAL, COMBINED)
         
         Returns:
             Dictionary with quality assessment
         """
-        # Assess coverage
-        coverage = statistics.get("data_coverage_percentage", 0)
+        # Assess coverage (now query-aware)
+        actual_coverage = statistics.get("data_coverage_percentage", 0)
+        
+        # Determine expected coverage based on query classification
+        if data_classification == "REAL_TIME":
+            expected_coverage = 33.3  # Only real-time data needed (1/3)
+            logger.info(f"REAL_TIME query: expecting {expected_coverage}% coverage")
+        elif data_classification == "HISTORICAL":
+            expected_coverage = 66.6  # Historical + context (2/3)
+            logger.info(f"HISTORICAL query: expecting {expected_coverage}% coverage")
+        else:  # COMBINED
+            expected_coverage = 100.0  # All data types (3/3)
+            logger.info(f"COMBINED query: expecting {expected_coverage}% coverage")
+        
+        # Fair coverage score: compare actual vs expected
+        coverage_score = min(1.0, actual_coverage / max(expected_coverage, 1))
         
         # Assess completeness
         has_real_time = bool(parsed_research.get("real_time"))
@@ -349,8 +374,8 @@ IMPORTANT: Return ONLY valid JSON, no additional text."""
         # Assess consistency (detected patterns)
         consistency_score = len(patterns) / 10  # normalized
         
-        # Overall quality score (0-1)
-        overall_score = (coverage/100 * 0.5 + completeness_score * 0.3 + consistency_score * 0.2)
+        # Overall quality score (0-1) - weighted by data type
+        overall_score = (coverage_score * 0.5 + completeness_score * 0.3 + consistency_score * 0.2)
         
         # Determine quality level
         if overall_score >= 0.8:
@@ -364,7 +389,10 @@ IMPORTANT: Return ONLY valid JSON, no additional text."""
             "quality_level": quality_level,
             "quality_score": round(overall_score, 2),
             "details": {
-                "coverage": round(coverage, 1),
+                "data_classification": data_classification,
+                "actual_coverage": round(actual_coverage, 1),
+                "expected_coverage": round(expected_coverage, 1),
+                "coverage_score": round(coverage_score * 100, 1),
                 "completeness": round(completeness_score * 100, 1),
                 "consistency": round(consistency_score * 100, 1),
                 "real_time_available": has_real_time,

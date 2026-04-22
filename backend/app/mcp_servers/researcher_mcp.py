@@ -19,6 +19,8 @@ class ResearcherMCP:
     WEATHER_API_KEY = os.getenv("OPENWEATHER_API_KEY", "")  # OpenWeatherMap
     NEWS_API_KEY = os.getenv("NEWS_API_KEY", "")            # NewsAPI
     STOCK_API_KEY = os.getenv("ALPHA_VANTAGE_API_KEY", "")  # Alpha Vantage
+    GOOGLE_SEARCH_API_KEY = os.getenv("GOOGLE_SEARCH_API_KEY", "")  # Google Custom Search
+    GOOGLE_SEARCH_ENGINE_ID = os.getenv("GOOGLE_SEARCH_ENGINE_ID", "")  # Google Custom Search Engine ID
     
     @staticmethod
     def get_real_time_data(query: str, data_to_gather: str) -> Dict[str, Any]:
@@ -65,12 +67,11 @@ class ResearcherMCP:
                 real_time_data["sources"].append("Financial APIs")
                 real_time_data["data"].append(financial_data)
         
-        # 5. Try web scraping (if needed)
-        if len(real_time_data["data"]) < 2:  # If other sources didn't work well
-            scraped_data = ResearcherMCP._scrape_web_data(query)
-            if scraped_data:
-                real_time_data["sources"].append("Web Scraping")
-                real_time_data["data"].append(scraped_data)
+        # 5. Try Google Custom Search (primary web search)
+        google_search_data = ResearcherMCP._get_google_search_data(query)
+        if google_search_data:
+            real_time_data["sources"].append("Google Custom Search")
+            real_time_data["data"].append(google_search_data)
         
         return real_time_data
     
@@ -239,17 +240,72 @@ Sources: Alpha Vantage, CoinGecko, World Bank APIs
 Status: Real financial data available"""
     
     @staticmethod
-    def _scrape_web_data(query: str) -> str:
-        """Scrape web data using BeautifulSoup as fallback."""
+    def _get_google_search_data(query: str) -> str:
+        """Fetch real web search data from Google Custom Search API.
+        
+        This is the primary web search method using official Google API.
+        Replaces web scraping with professional search results.
+        """
         try:
-            logger.info(f"Scraping web for: {query}")
+            logger.info(f"Fetching from Google Custom Search: {query}")
             
-            # Example: Search Google (in production, would use proper search)
+            # Check if Google API keys are configured
+            if not ResearcherMCP.GOOGLE_SEARCH_API_KEY or not ResearcherMCP.GOOGLE_SEARCH_ENGINE_ID:
+                logger.warning("Google Custom Search API keys not configured in .env")
+                return ResearcherMCP._scrape_web_data(query)  # Fallback to scraping
+            
+            # Google Custom Search API endpoint
+            response = requests.get(
+                "https://www.googleapis.com/customsearch/v1",
+                params={
+                    "q": query,
+                    "key": ResearcherMCP.GOOGLE_SEARCH_API_KEY,
+                    "cx": ResearcherMCP.GOOGLE_SEARCH_ENGINE_ID,
+                    "num": 5  # Get top 5 results
+                },
+                timeout=5
+            )
+            
+            if response.status_code == 200:
+                data = response.json()
+                results = data.get("items", [])
+                
+                if results:
+                    # Format top results
+                    search_results = f"""[GOOGLE CUSTOM SEARCH RESULTS]
+Query: {query}
+Total Results: {data.get('queries', {}).get('request', [{}])[0].get('totalResults', 'Unknown')}
+
+Top Results:
+"""
+                    for idx, result in enumerate(results[:3], 1):
+                        search_results += f"""
+{idx}. {result.get('title', 'N/A')}
+   URL: {result.get('link', 'N/A')}
+   Snippet: {result.get('snippet', 'N/A')}
+"""
+                    return search_results
+            
+        except Exception as e:
+            logger.warning(f"Google Custom Search API failed: {str(e)}")
+        
+        # Fallback to web scraping if Google API fails
+        return ResearcherMCP._scrape_web_data(query)
+    
+    @staticmethod
+    def _scrape_web_data(query: str) -> str:
+        """Fallback web scraping using BeautifulSoup (when API not available).
+        
+        This is only used as a fallback when Google Custom Search API is not configured.
+        """
+        try:
+            logger.info(f"Fallback: Scraping web for: {query}")
+            
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
             }
             
-            # This is simplified - in production would be more sophisticated
+            # Attempt basic scraping
             response = requests.get(
                 f"https://www.google.com/search?q={query}",
                 headers=headers,
@@ -258,10 +314,9 @@ Status: Real financial data available"""
             
             if response.status_code == 200:
                 soup = BeautifulSoup(response.content, 'html.parser')
-                # Extract relevant snippets
                 snippets = soup.find_all('span', limit=3)
                 if snippets:
-                    return f"""[WEB SCRAPED DATA]
+                    return f"""[WEB SCRAPED DATA - Fallback]
 Found {len(snippets)} relevant results
 Query: {query}
 Source: Web Scraping (BeautifulSoup)
@@ -270,9 +325,9 @@ Status: Data extracted successfully"""
         except Exception as e:
             logger.warning(f"Web scraping failed: {str(e)}")
         
-        return f"""[WEB SCRAPED DATA]
+        return f"""[WEB DATA - Unavailable]
 Query: {query}
-Status: Web scraping available as fallback"""
+Status: Web search data unavailable. Configure GOOGLE_SEARCH_API_KEY and GOOGLE_SEARCH_ENGINE_ID in .env"""
     
     @staticmethod
     def get_historical_data(query: str, context: Dict[str, Any]) -> str:
