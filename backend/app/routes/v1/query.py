@@ -131,7 +131,6 @@ def process_query():
         elapsed = time.time() - start_time
         logger.info(f"[{session_id}] Query processed successfully in {elapsed:.2f}s")
         
-<<<<<<< HEAD
         # Extract agent outputs and metadata
         final_state = result.get("final_state", {})
         
