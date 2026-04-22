@@ -278,37 +278,35 @@ COMBINATION_STRATEGY: [How to combine if using multiple sources]
 """
     
     def _gather_historical_data(self, query: str, plan: str) -> str:
-        """Gather REAL historical data from DATABASE + Groq LLM's own knowledge.
+        """Gather historical data: PAST queries from DATABASE + EXISTING data from Groq LLM.
         
-        Combines:
-        1. Previous conversations from MongoDB (user's personal history)
-        2. Groq LLM's own knowledge (general historical knowledge and patterns)
+        Two-part approach:
+        1. Database: Get user's PAST relevant conversations (existing stored knowledge)
+        2. Groq LLM: Get EXISTING/CURRENT information about the topic
+        3. Combine both for comprehensive answer
         
-        Returns: Enhanced historical analysis with both sources combined.
+        Returns: Combined analysis with both sources
         """
         try:
             from app.services.database_service import get_db_service
             
-            # Get user_id from current context (if available)
+            # ===== PART 1: Get PAST queries from DATABASE =====
             user_id = getattr(self, '_current_user_id', None)
-            
-            # Build context from previous chats
-            database_context = {
-                "previous_chats": [],
+            database_data = {
+                "past_conversations": [],
                 "user_profile": {}
             }
             
-            # Query MongoDB for user's conversation history
             if user_id:
                 try:
                     db_service = get_db_service()
                     
                     if db_service.is_connected():
-                        # Get user's last 5 conversations for context
+                        # Get user's last 5 conversations (past queries)
                         previous_convs = db_service.get_user_conversations(user_id, limit=5, skip=0)
                         
-                        # Format previous conversations for context
-                        database_context["previous_chats"] = [
+                        # Format past conversations
+                        database_data["past_conversations"] = [
                             {
                                 "query": conv.query,
                                 "summary": conv.title,
@@ -318,127 +316,147 @@ COMBINATION_STRATEGY: [How to combine if using multiple sources]
                             for conv in previous_convs
                         ]
                         
-                        # Get user profile for additional context
+                        # Get user profile
                         user_profile = db_service.get_user(user_id)
                         if user_profile:
-                            database_context["user_profile"] = {
+                            database_data["user_profile"] = {
                                 "total_conversations": user_profile.total_conversations,
-                                "average_quality_score": user_profile.average_quality_score,
-                                "email": user_profile.email,
-                                "name": user_profile.name
+                                "average_quality_score": user_profile.average_quality_score
                             }
                         
-                        logger.info(f"Retrieved {len(database_context['previous_chats'])} previous chats for user {user_id}")
+                        logger.info(f"Retrieved {len(database_data['past_conversations'])} past conversations from database")
                     else:
-                        logger.warning("MongoDB not connected - will use Groq's knowledge only")
+                        logger.warning("MongoDB not connected - no past data available")
                         
                 except Exception as db_error:
-                    logger.warning(f"Error fetching conversation history: {str(db_error)}")
-                    # Continue without database context - Groq can still help
+                    logger.warning(f"Error fetching past conversations: {str(db_error)}")
             
-            # Now send database context + query to Groq LLM to combine with its own knowledge
-            historical_data = self._synthesize_with_groq_knowledge(query, plan, database_context)
+            # ===== PART 2: Get EXISTING data from Groq LLM =====
+            existing_data = self._get_existing_data_from_groq(query, plan)
             
-            logger.info("Historical data synthesized from DATABASE context + Groq LLM knowledge")
-            return historical_data
+            # ===== PART 3: Combine both sources =====
+            combined_analysis = self._combine_database_and_existing_data(
+                query, 
+                database_data, 
+                existing_data
+            )
+            
+            logger.info("Historical data: Combined past database + existing information")
+            return combined_analysis
             
         except Exception as e:
             logger.error(f"Error gathering historical data: {str(e)}")
-            # Fallback - just use Groq's knowledge
-            return f"""[HISTORICAL DATA from Groq LLM for: {query}]
+            # Fallback
+            return f"""[HISTORICAL DATA FALLBACK for: {query}]
 - Historical context and background
 - Evolution and development over time
 - Past trends and patterns
 - Established knowledge and proven approaches
-- Historical statistics and data
-- Lessons learned from the past
-- Timeline of key developments
 """
     
-    def _synthesize_with_groq_knowledge(self, query: str, plan: str, database_context: Dict) -> str:
-        """Use Groq LLM to combine database context with its own knowledge.
+    def _get_existing_data_from_groq(self, query: str, plan: str) -> str:
+        """Get EXISTING/CURRENT data about the topic using Groq LLM's knowledge.
         
-        Sends both sources to Groq and asks it to synthesize them.
-        This is the "brain" of the researcher - it thinks and reasons.
-        
-        Args:
-            query: Original user query
-            plan: Planner's plan for what to research
-            database_context: User's previous conversations from MongoDB
-        
-        Returns:
-            Synthesized historical analysis combining both sources
+        This is Groq's 'brain' - using its training data to provide:
+        - Current state of knowledge
+        - Established facts and information
+        - Proven approaches and patterns
+        - Key insights about the topic
         """
-        
-        # Format database context for LLM
-        db_context_str = self._format_database_context(database_context)
-        
-        # Build prompt asking Groq to use BOTH sources
-        prompt = f"""You are a Historical Research Expert. Combine TWO sources to provide comprehensive historical knowledge.
+        prompt = f"""You are an expert providing EXISTING knowledge about a topic.
 
-USER QUERY: {query}
+QUERY: {query}
 
 PLANNER'S RESEARCH PLAN: {plan}
 
-SOURCE 1 - DATABASE (User's Previous Conversations):
-{db_context_str}
+Based on your training data, provide EXISTING information about this topic:
 
-SOURCE 2 - YOUR OWN KNOWLEDGE (Groq LLM):
-Use your training data to provide:
-- Historical context and background
-- Evolution and development patterns over time
-- Past trends that are relevant
-- Established proven approaches
-- Historical statistics and data
-- Timeline of key developments
-- Lessons learned from history that apply here
+1. **Current State**: What is the current state/status of this topic?
+2. **Established Facts**: What are proven/established facts?
+3. **Key Concepts**: What important concepts exist in this field?
+4. **Proven Approaches**: What approaches have proven effective?
+5. **Important Patterns**: What patterns exist in this domain?
+6. **Key Players/Resources**: Who or what are important in this area?
+7. **Best Practices**: What are current best practices?
+8. **Common Challenges**: What challenges typically exist?
 
-TASK: Synthesize both sources to provide:
-1. **Database Insights**: What we learned from user's previous conversations
-2. **Historical Knowledge**: What history and past patterns tell us
-3. **Combined Analysis**: How these sources together inform the current query
-4. **Recommendations**: Lessons from the past that apply to this situation
-
-Format your answer as a comprehensive historical research report that combines:
-- Specific examples from user's database (if available)
-- General historical knowledge and patterns
-- How history informs current understanding"""
+Provide comprehensive EXISTING knowledge based on your training data."""
         
         try:
             response = self.llm.invoke(prompt)
-            historical_knowledge = response.content if hasattr(response, 'content') else str(response)
+            existing_knowledge = response.content if hasattr(response, 'content') else str(response)
             
-            logger.info(f"Groq synthesized {len(historical_knowledge)} chars of historical knowledge combining database + own knowledge")
-            
-            return f"[HISTORICAL DATA: Database Context + Groq LLM Knowledge]\n\n{historical_knowledge}"
+            logger.info(f"Groq provided {len(existing_knowledge)} chars of existing knowledge")
+            return existing_knowledge
             
         except Exception as e:
-            logger.error(f"Error synthesizing with Groq: {str(e)}")
-            # Fallback to just database context
-            return f"[HISTORICAL DATA from Database]\n{db_context_str}"
+            logger.error(f"Error getting existing data from Groq: {str(e)}")
+            return "Unable to retrieve existing knowledge"
     
-    def _format_database_context(self, database_context: Dict) -> str:
-        """Format database context for LLM readability."""
-        formatted = ""
+    def _combine_database_and_existing_data(self, query: str, 
+                                           database_data: Dict, 
+                                           existing_data: str) -> str:
+        """Combine PAST queries (from database) with EXISTING data (from Groq).
         
-        # Add user profile if available
-        if database_context.get("user_profile"):
-            profile = database_context["user_profile"]
-            formatted += f"USER PROFILE:\n"
-            formatted += f"- Name: {profile.get('name', 'N/A')}\n"
-            formatted += f"- Total Conversations: {profile.get('total_conversations', 0)}\n"
-            formatted += f"- Average Quality Score: {profile.get('average_quality_score', 'N/A')}\n\n"
+        Creates a comprehensive analysis that includes:
+        - What user has asked before (database)
+        - What existing knowledge tells us (Groq)
+        - How they complement each other
+        """
         
-        # Add previous conversations
-        if database_context.get("previous_chats"):
-            formatted += f"PREVIOUS CONVERSATIONS (Last 5):\n"
-            for i, chat in enumerate(database_context["previous_chats"], 1):
-                formatted += f"\n{i}. Query: {chat.get('query', 'N/A')}\n"
-                formatted += f"   Summary: {chat.get('summary', 'N/A')}\n"
-                formatted += f"   Quality: {chat.get('quality_score', 'N/A')}\n"
-                formatted += f"   Date: {chat.get('created_at', 'N/A')}\n"
-        else:
-            formatted += "NO PREVIOUS CONVERSATIONS - First time this user is asking about this topic\n"
+        # Format past conversations for readability
+        past_convs_str = self._format_past_conversations(database_data["past_conversations"])
+        
+        combination_prompt = f"""Create a comprehensive analysis combining two sources:
+
+CURRENT QUERY: {query}
+
+SOURCE 1 - PAST QUERIES from DATABASE (What user has asked before):
+{past_convs_str}
+
+SOURCE 2 - EXISTING DATA from Knowledge (Current information about this topic):
+{existing_data}
+
+Create an analysis that includes:
+
+1. **PAST CONTEXT**: 
+   - What has this user asked about before?
+   - How does past relate to current query?
+   - What patterns from past apply?
+
+2. **EXISTING KNOWLEDGE**:
+   - What does current knowledge tell us?
+   - What are established facts?
+   - What approaches currently work?
+
+3. **COMBINED INSIGHT**:
+   - How do past questions + existing knowledge complement each other?
+   - What's relevant from their history?
+   - How does existing knowledge help with their current query?
+
+4. **PRACTICAL ANSWER**:
+   - Based on both sources, what's the best approach?
+   - What insights from their past apply?
+   - What new information from existing knowledge adds value?"""
+        
+        try:
+            response = self.llm.invoke(combination_prompt)
+            combined = response.content if hasattr(response, 'content') else str(response)
+            return f"[HISTORICAL DATA: Past Database + Existing Knowledge Combined]\n\n{combined}"
+        except Exception as e:
+            logger.error(f"Error combining sources: {str(e)}")
+            return f"[Historical Data]\n\nPast Questions:\n{past_convs_str}\n\nExisting Knowledge:\n{existing_data}"
+    
+    def _format_past_conversations(self, conversations: list) -> str:
+        """Format past conversations for readability."""
+        if not conversations:
+            return "No past conversations - first time asking about this topic"
+        
+        formatted = "Past Conversations:\n"
+        for i, conv in enumerate(conversations, 1):
+            formatted += f"\n{i}. Query: {conv.get('query', 'N/A')}\n"
+            formatted += f"   Quality: {conv.get('quality_score', 'N/A')}/10\n"
+            formatted += f"   Date: {conv.get('created_at', 'N/A')}\n"
         
         return formatted
     

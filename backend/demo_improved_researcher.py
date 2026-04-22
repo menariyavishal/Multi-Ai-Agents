@@ -1,170 +1,236 @@
 #!/usr/bin/env python3
 """
-Demo: Improved Researcher Agent using BOTH Database Context + Groq LLM Knowledge
+Demo: Improved Researcher Agent - CORRECTED APPROACH
+Uses Database (Past Queries) + Groq LLM (Existing Data) SEPARATELY
 """
 
 print("=" * 75)
-print("DEMO: IMPROVED RESEARCHER AGENT")
+print("RESEARCHER AGENT IMPROVEMENT - CORRECTED UNDERSTANDING")
 print("=" * 75)
 print()
 
-print("IMPROVEMENT: Historical Data Gathering")
+print("CLARIFICATION ON DATA SOURCES")
 print("-" * 75)
 print()
 
-print("BEFORE (Old Way):")
-print("  └─ Researcher gets data from MongoDB database only")
-print("  └─ Returns: Historical conversations + user profile")
-print("  └─ Problem: Limited to only what's in the database")
+print("What You Said: Use BOTH like database for past queries")
+print("               + Groq for existing data required for query")
 print()
 
-print("AFTER (New Way - IMPROVED):")
-print("  ├─ Step 1: Get user's previous conversations from MongoDB")
-print("  ├─ Step 2: Get user profile from MongoDB")
-print("  ├─ Step 3: Send BOTH database context + query to Groq LLM")
-print("  ├─ Step 4: Groq combines:")
-print("  │          • Database context (user's actual history)")
-print("  │          • Groq's own knowledge (historical patterns, general knowledge)")
-print("  ├─ Step 5: Return synthesized analysis from BOTH sources")
-print("  └─ Result: Rich, comprehensive historical perspective")
+print("OLD WAY (Database Only):")
+print("  └─ Get conversations from MongoDB")
+print("  └─ Return them as history")
+print("  └─ Problem: No fresh/existing data")
+print()
+
+print("NEW WAY (CORRECTED - Your Vision):")
+print("  ├─ DATABASE: Retrieve past queries (if helpful)")
+print("  ├─ GROQ: Provide existing/current data about topic")
+print("  └─ COMBINE: Both sources, each in their proper role")
 print()
 
 print("=" * 75)
-print("HOW IT WORKS")
-print("=" * 75)
-print()
-
 print("SCENARIO: User asks 'How has AI evolved?'")
+print("=" * 75)
 print()
 
-print("STEP 1 - Planner creates plan:")
-print("  └─ Plan includes keywords: 'evolution', 'history', 'past trends'")
-print()
-
-print("STEP 2 - Researcher analyzes plan:")
+print("STEP 1: Planner creates plan")
+print("  └─ Keywords: 'evolution', 'history', 'past trends'")
 print("  └─ Detects: DATA_TYPE = HISTORICAL")
-print("  └─ Decision: Get data from DATABASE + Groq knowledge")
-print()
-
-print("STEP 3 - Researcher fetches from MongoDB:")
-print("  └─ Gets user's last 5 conversations:")
-print("    • Query 1: 'What is machine learning?'")
-print("    • Query 2: 'How do neural networks work?'")
-print("    • Query 3: 'Latest AI models 2026?'")
-print("    • Query 4: 'AI applications in healthcare'")
-print("    • Query 5: 'Future of AI'")
-print("  └─ Gets user profile:")
-print("    • Name: User123")
-print("    • Total conversations: 24")
-print("    • Average quality: 8.5/10")
-print()
-
-print("STEP 4 - Researcher sends to Groq LLM:")
-print("  └─ Prompt includes:")
-print()
-print("    'Combine TWO sources for historical knowledge about AI evolution:'")
-print()
-print("    SOURCE 1 - DATABASE (User's History):")
-print("    • Previous queries: machine learning, neural networks, AI models...")
-print("    • User profile: 24 conversations, high quality scores")
-print("    • User interests: ML, NNs, current AI, healthcare AI")
-print()
-print("    SOURCE 2 - YOUR KNOWLEDGE (Groq LLM):")
-print("    • Historical timeline of AI development")
-print("    • Evolution from symbolic AI → machine learning → deep learning")
-print("    • Current state of the art (2026)")
-print("    • Lessons learned from AI history")
-print()
-print("    'Synthesize both sources to show how AI evolved'")
-print()
-
-print("STEP 5 - Groq returns enhanced analysis:")
-print()
-print("  [HISTORICAL DATA: Database Context + Groq LLM Knowledge]")
-print()
-print("  DATABASE INSIGHTS:")
-print("  └─ This user has strong interest in AI fundamentals and recent advances")
-print("  └─ They understand ML basics (based on previous queries)")
-print("  └─ Relevant context: 24 conversations at 8.5/10 quality")
-print()
-print("  HISTORICAL KNOWLEDGE:")
-print("  └─ AI evolution 1956-2026: from symbolic AI → machine learning → deep learning")
-print("  └─ Key milestones: AlexNet (2012), AlphaGo (2016), Transformers (2017)")
-print("  └─ Current era: Large Language Models dominate (2020-2026)")
-print()
-print("  COMBINED ANALYSIS:")
-print("  └─ Given user's background in fundamentals,")
-print("  └─ They'll understand the evolution from classical ML to modern LLMs")
-print("  └─ Key lessons: Each era learned from previous limitations")
-print()
-print("  RECOMMENDATIONS:")
-print("  └─ Explain how user's understood concepts built into modern AI")
-print("  └─ Connect their knowledge of NNs to Transformers")
-print("  └─ Provide timeline with technical depth they can follow")
 print()
 
 print("=" * 75)
-print("BENEFITS")
+print("STEP 2: PART A - DATABASE (Past Queries)")
 print("=" * 75)
 print()
-print("✓ Better Context: Groq understands user's background from database")
-print("✓ Enhanced Knowledge: Uses Groq's training data for comprehensive history")
-print("✓ Personalized Analysis: Tailored to user's previous interests")
-print("✓ Rich Synthesis: Database + LLM = better than either alone")
-print("✓ Smarter Next Agents: Analyst/Writer get richer historical context")
+
+print("ACTION: Query MongoDB for relevant past conversations")
+print()
+
+print("User's Past Questions (from database):")
+print("  1. 'What is machine learning?' - Quality: 9/10")
+print("  2. 'How do neural networks work?' - Quality: 8.5/10")
+print("  3. 'Latest AI models 2026?' - Quality: 9.5/10")
+print("  4. 'AI applications in healthcare' - Quality: 8/10")
+print("  5. 'Future of AI' - Quality: 9/10")
+print()
+
+print("User Profile:")
+print("  - Total conversations: 24")
+print("  - Average quality: 8.7/10")
+print("  - Pattern: Strong interest in AI fundamentals")
+print()
+
+print("DATABASE CONTRIBUTION:")
+print("  ✓ Shows user understands ML basics")
+print("  ✓ Shows they track latest AI models")
+print("  ✓ Shows they think about applications AND future")
+print("  ✓ This context will personalize the answer")
 print()
 
 print("=" * 75)
-print("DATA FLOW")
+print("STEP 3: PART B - GROQ (Existing Data)")
 print("=" * 75)
 print()
+
+print("ACTION: Ask Groq for EXISTING knowledge about topic")
+print()
+
+print("Groq is asked: 'Provide existing knowledge about AI evolution'")
+print()
+
+print("GROQ PROVIDES (Its own brain/training data):")
+print("  • Current State: What AI is in 2026")
+print("  • Established Facts: Proven facts about AI history")
+print("  • Key Concepts: What currently matters in AI")
+print("  • Proven Approaches: What actually works")
+print("  • Patterns: What we've learned")
+print("  • Key Players: Who matters in AI")
+print("  • Best Practices: What works best today")
+print("  • Challenges: Real obstacles in AI")
+print()
+
+print("GROQ RETURNS:")
+print("  • Timeline: Symbolic AI (1956) → ML (1980s) → Deep Learning (2012) → LLMs (2017+)")
+print("  • Current state: LLMs dominant in 2026")
+print("  • Key insight: Each era built on previous understanding")
+print("  • Modern focus: Scaling, efficiency, safety")
+print("  • Best practices: Few-shot learning, RAG, fine-tuning")
+print()
+
+print("GROQ CONTRIBUTION:")
+print("  ✓ Fresh, current information")
+print("  ✓ Established historical facts")
+print("  ✓ What works right now")
+print("  ✓ Not repeating database - adding NEW knowledge")
+print()
+
+print("=" * 75)
+print("STEP 4: COMBINE BOTH SOURCES")
+print("=" * 75)
+print()
+
+print("ACTION: Merge database context + Groq's knowledge")
+print()
+
+print("FINAL ANSWER includes:")
+print()
+
+print("1. PAST CONTEXT (from database):")
+print("   'This user has asked about ML, NNs, current models, healthcare AI'")
+print("   'They understand fundamentals (quality 8.7/10)'")
+print()
+
+print("2. EXISTING DATA (from Groq):")
+print("   'AI evolution from symbolic AI to modern LLMs'")
+print("   'Current focus on scaling and efficiency'")
+print()
+
+print("3. COMBINED INSIGHT:")
+print("   'Connect user's NN knowledge to modern Transformers'")
+print("   'Explain how fundamentals they know led to modern AI'")
+print("   'Provide timeline with depth they can understand'")
+print()
+
+print("=" * 75)
+print("THE CORRECT ROLES")
+print("=" * 75)
+print()
+
+print("DATABASE (MongoDB - Past Queries):")
+print("  ✓ What user has asked before")
+print("  ✓ Their interests and background")
+print("  ✓ Quality of their understanding")
+print("  ✓ Patterns in their questions")
+print("  ✗ NOT for Groq to process - keep as-is")
+print()
+
+print("GROQ LLM (Existing/Current Data):")
+print("  ✓ Current knowledge about the topic")
+print("  ✓ Established facts and patterns")
+print("  ✓ How things work right now (2026)")
+print("  ✓ Best practices")
+print("  ✓ Lessons from the past")
+print("  ✗ NOT to restate database - provide NEW knowledge")
+print()
+
+print("=" * 75)
+print("COMPLETE DATA FLOW")
+print("=" * 75)
+print()
+
 print("""
-User Query: "How has AI evolved?"
+User: "How has AI evolved?"
         ↓
-   Planner Agent
-   Creates detailed plan
+Planner: Creates detailed plan
         ↓
-   Researcher Agent
-   ├─ Analyzes plan: DATA_TYPE = HISTORICAL
-   ├─ Fetches from MongoDB (user's 5 previous conversations + profile)
-   ├─ Creates Database Context String
-   ├─ Sends to Groq: "Combine this database context + your knowledge"
-   ├─ Groq synthesizes: DATABASE + OWN BRAIN
-   └─ Returns: Rich historical analysis
+Researcher: DATA_TYPE = HISTORICAL
+        │
+        ├─ PATH 1: Database (Past Queries)
+        │   └─ Query MongoDB for user's 5 past conversations
+        │      └─ Get user profile
+        │      └─ Returns: Historical queries + user background
+        │
+        ├─ PATH 2: Groq (Existing Data)
+        │   └─ Ask Groq for existing knowledge
+        │      └─ "What's the existing information about this?"
+        │      └─ Returns: Current facts, established knowledge, patterns
+        │
+        └─ PATH 3: Combine Both
+            ├─ Merge: Past context (DB) + Existing knowledge (Groq)
+            ├─ Create: Comprehensive historical perspective
+            └─ Returns: Rich analysis with both sources
         ↓
-   Analyst Agent
-   (Uses historical analysis as base for pattern extraction)
+Analyst: Analyzes the combined data
         ↓
-   Writer Agent
-   (Synthesizes into polished output)
+Writer: Writes polished answer
         ↓
-   Reviewer Agent
-   (Validates quality)
+Reviewer: Validates quality
         ↓
-   User gets answer with:
-   • Personalized to their background (from database)
-   • Enhanced with historical knowledge (from Groq)
-   • Better synthesis than database-only or Groq-only
+User gets BETTER answer because:
+  • Personalized (knows their background from DB)
+  • Fresh (has current knowledge from Groq)
+  • Both sources in their proper roles
+  • No redundancy - DB for past, Groq for present
 """)
 
 print("=" * 75)
-print("KEY CODE CHANGES")
+print("KEY CODE STRUCTURE")
 print("=" * 75)
 print()
-print("Old way:")
-print("  return ResearcherMCP.get_historical_data(query, context)")
+
+print("For HISTORICAL data queries:")
 print()
-print("New way:")
-print("  1. Get database context from MongoDB")
-print("  2. Call: self._synthesize_with_groq_knowledge(query, plan, db_context)")
-print("  3. Groq combines database context + its own knowledge")
-print("  4. Return enhanced historical analysis")
+print("1. _gather_historical_data()")
+print("   ├─ Get past queries from Database")
+print("   ├─ Get existing data from Groq")
+print("   └─ Combine them")
+print()
+print("2. _get_existing_data_from_groq()")
+print("   └─ Sends query + plan to Groq")
+print("       └─ Asks for current/existing knowledge")
+print()
+print("3. _combine_database_and_existing_data()")
+print("   ├─ Takes: Database past queries + Groq existing data")
+print("   ├─ Combines them intelligently")
+print("   └─ Returns: Comprehensive analysis")
 print()
 
 print("=" * 75)
-print("STATUS: IMPROVED RESEARCHER ACTIVE")
+print("STATUS: RESEARCHER IMPROVED - CORRECT APPROACH")
 print("=" * 75)
 print()
-print("[OK] Researcher now uses: DATABASE + GROQ LLM BRAIN")
-print("[OK] Better historical context for all downstream agents")
+print("[OK] Historical Data Gathering Now Uses:")
+print()
+print("     SOURCE 1 - DATABASE")
+print("     └─ Past queries from MongoDB")
+print("     └─ User profile and interests")
+print("     └─ Personalization context")
+print()
+print("     SOURCE 2 - GROQ LLM")
+print("     └─ Existing/current data about topic")
+print("     └─ Established facts and patterns")
+print("     └─ What works right now")
+print()
+print("     COMBINED = Better answer than either alone")
 print()
