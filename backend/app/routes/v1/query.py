@@ -131,6 +131,7 @@ def process_query():
         elapsed = time.time() - start_time
         logger.info(f"[{session_id}] Query processed successfully in {elapsed:.2f}s")
         
+<<<<<<< HEAD
         # Extract agent outputs and metadata
         final_state = result.get("final_state", {})
         
@@ -175,6 +176,17 @@ def process_query():
     except Exception as e:
         elapsed = time.time() - start_time
         logger.error(f"[{session_id}] Query processing failed: {str(e)}", exc_info=True)
+        
+        # Save error to history
+        db_service = get_db_service()
+        db_service.save_query_history(
+            user_id="anonymous",
+            query_text=query,
+            session_id=session_id,
+            status="failed",
+            error_message=str(e),
+            execution_time_seconds=elapsed
+        )
         
         return jsonify({
             "status": "error",

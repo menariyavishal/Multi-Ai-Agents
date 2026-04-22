@@ -2,10 +2,12 @@
 
 from flask import Blueprint, request, jsonify, Response
 from app.services.workflow_manager import get_workflow_manager
+from app.services.db_service import get_db_service
 from app.core.logger import get_logger
 import uuid
 import json
 import asyncio
+import time
 
 logger = get_logger(__name__)
 
@@ -69,6 +71,7 @@ def stream_query():
         
         def event_stream():
             """Generate SSE events for streaming updates."""
+            start_time = time.time()
             try:
                 # Get workflow manager
                 manager = get_workflow_manager(enable_checkpointing=True)
@@ -117,12 +120,62 @@ def stream_query():
                 
                 summary = manager.get_result_summary(result)
                 
+                # Persist query and workflow state
+                elapsed = time.time() - start_time
+                agent_outputs = {
+                    "plan": result.get("plan", ""),
+                    "research": result.get("research", ""),
+                    "analysis": result.get("analysis", ""),
+                    "draft": result.get("draft", ""),
+                    "review_feedback": result.get("review_feedback", {}),
+                    "routing_decision": result.get("routing_decision", "")
+                }
+                
+                quality_score = result.get("final_quality_score", None)
+                iterations_used = result.get("final_iteration_count", 1)
+                
+                db_service = get_db_service()
+                query_id = db_service.save_query_history(
+                    user_id="anonymous",
+                    query_text=query,
+                    session_id=session_id,
+                    agent_outputs=agent_outputs,
+                    status="completed",
+                    execution_time_seconds=elapsed,
+                    iterations_used=iterations_used,
+                    quality_score=quality_score
+                )
+                
+                db_service.save_full_state_to_mongo(
+                    session_id=session_id,
+                    query=query,
+                    workflow_state=result,
+                    user_id="anonymous",
+                    final_answer=result.get("final_answer", ""),
+                    execution_time_seconds=elapsed,
+                    status="completed"
+                )
+                
+                logger.info(f"[{session_id}] Streaming query saved (id: {query_id})")
+                
                 # Yield complete event
                 yield f"data: {json.dumps({'type': 'workflow_complete', 'result': summary})}\n\n"
-                logger.info(f"[{session_id}] Streaming completed successfully")
             
             except Exception as e:
+                elapsed = time.time() - start_time
                 logger.error(f"[{session_id}] Streaming error: {str(e)}", exc_info=True)
+                
+                # Save error to history
+                db_service = get_db_service()
+                db_service.save_query_history(
+                    user_id="anonymous",
+                    query_text=query,
+                    session_id=session_id,
+                    status="failed",
+                    error_message=str(e),
+                    execution_time_seconds=elapsed
+                )
+                
                 yield f"data: {json.dumps({'type': 'error', 'error': str(e)})}\n\n"
         
         return Response(

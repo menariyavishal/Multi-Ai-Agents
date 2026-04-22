@@ -27,27 +27,27 @@ from app.services.database_service import DatabaseService
 def initialize_mongodb():
     """Initialize MongoDB with collections and indexes."""
     print("\n" + "="*60)
-    print("🚀 MongoDB Initialization")
+    print("[*] MongoDB Initialization")
     print("="*60)
     
     # Load environment
     load_dotenv(os.path.join(os.path.dirname(__file__), '..', '.env'))
     
     # Initialize database service
-    print("\n📡 Connecting to MongoDB...")
+    print("\n[+] Connecting to MongoDB...")
     db_service = DatabaseService()
     
     if not db_service.is_connected():
-        print("❌ Failed to connect to MongoDB!")
-        print("\n⚠️  Please ensure:")
+        print("[!] Failed to connect to MongoDB!")
+        print("\n[!] Please ensure:")
         print("  1. MongoDB is running (mongod)")
         print("  2. MONGODB_URI is set in backend/.env")
         print("  3. Connection credentials are correct (for Atlas)")
         return False
     
-    print("✅ Connected successfully!")
+    print("[+] Connected successfully!")
     
-    print("\n📊 Checking collections and indexes...")
+    print("\n[+] Checking collections and indexes...")
     
     # Get collection names
     collections = db_service.db.list_collection_names()
@@ -55,33 +55,33 @@ def initialize_mongodb():
     
     if "conversations" in collections:
         indexes = db_service.conversations_collection.list_indexes()
-        print(f"  ✓ conversations collection exists")
+        print(f"  [+] conversations collection exists")
         print(f"    Indexes: {[idx['name'] for idx in indexes]}")
     else:
-        print(f"  ✓ conversations collection will be created on first insert")
+        print(f"  [+] conversations collection will be created on first insert")
     
     if "users" in collections:
         indexes = db_service.users_collection.list_indexes()
-        print(f"  ✓ users collection exists")
+        print(f"  [+] users collection exists")
         print(f"    Indexes: {[idx['name'] for idx in indexes]}")
     else:
-        print(f"  ✓ users collection will be created on first insert")
+        print(f"  [+] users collection will be created on first insert")
     
     print("\n" + "="*60)
-    print("✅ MongoDB Initialization Complete!")
+    print("[+] MongoDB Initialization Complete!")
     print("="*60)
     print("""
-📝 What was set up:
+[+] What was set up:
   - MongoDB connection verified
   - Collections: conversations, users
   - Indexes created for optimized queries
   
-🔍 Next steps:
+[+] Next steps:
   1. Run seed script: python scripts/seed_mongodb.py
   2. Start Flask API: python main.py
   3. Test endpoints: python scripts/demo_mongodb_history.py
   
-📚 Documentation: See MONGODB_SETUP.md in project root
+[+] Documentation: See MONGODB_SETUP.md in project root
     """)
     
     return True
@@ -108,13 +108,13 @@ def main():
     
     # Optional: seed test data
     if args.seed:
-        print("\n⏳ Seeding test data...")
+        print("\n[+] Seeding test data...")
         try:
             # Import and run seed script
             from seed_mongodb import seed_database
             seed_database()
         except ImportError:
-            print("⚠️  Could not import seed script. Run separately:")
+            print("[!] Could not import seed script. Run separately:")
             print("   python scripts/seed_mongodb.py")
     
     sys.exit(0)
