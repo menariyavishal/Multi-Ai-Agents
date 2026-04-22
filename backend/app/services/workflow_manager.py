@@ -23,6 +23,7 @@ class WorkflowManager:
     def process_query(
         self,
         query: str,
+        user_id: str = "",
         max_iterations: int = 3,
         verbose: bool = False
     ) -> Dict[str, Any]:
@@ -32,6 +33,7 @@ class WorkflowManager:
         
         Args:
             query: User question or request
+            user_id: User identifier for database context and conversation history
             max_iterations: Maximum revision cycles allowed (1-5, default 3)
             verbose: Print detailed execution info
         
@@ -40,13 +42,13 @@ class WorkflowManager:
         
         Example:
             >>> manager = WorkflowManager()
-            >>> result = manager.process_query("What are AI trends?")
+            >>> result = manager.process_query("What are AI trends?", user_id="user123")
             >>> if result['final_answer']:
             ...     print(result['final_answer'])
             ... else:
             ...     print(result['review_feedback'])
         """
-        logger.info(f"Processing query: {query[:80]}")
+        logger.info(f"Processing query: {query[:80]} for user: {user_id}")
         
         # Validate max_iterations
         max_iterations = max(1, min(5, max_iterations))
@@ -54,6 +56,7 @@ class WorkflowManager:
         # Run synchronous workflow
         return self.runner.run_synchronous(
             query=query,
+            user_id=user_id,
             max_iterations=max_iterations,
             verbose=verbose
         )

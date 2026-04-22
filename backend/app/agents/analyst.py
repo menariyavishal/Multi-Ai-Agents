@@ -510,3 +510,4 @@ Top Recommendations ({len(recommendations)} suggested):
 Confidence Level: {insights.get('confidence_level', 0):.0%}
 """
         return summary.strip()
+    

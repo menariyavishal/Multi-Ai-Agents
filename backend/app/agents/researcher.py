@@ -21,6 +21,7 @@ class Researcher(BaseAgent):
             state: Workflow state containing:
                 - query: The user's original query
                 - plan: The Planner's detailed plan
+                - user_id: User identifier for database context
                 - iteration: Current iteration number
                 - messages: Message history
         
@@ -32,8 +33,12 @@ class Researcher(BaseAgent):
         """
         query = state.get("query", "")
         plan = state.get("plan", "")
+        user_id = state.get("user_id", "")
         iteration = state.get("iteration", 1)
         messages = state.get("messages", [])
+        
+        # Store user_id for use in data gathering methods
+        self._current_user_id = user_id
         
         if not plan:
             logger.warning("No plan provided to Researcher")
@@ -44,7 +49,7 @@ class Researcher(BaseAgent):
                 "messages": messages
             }
         
-        logger.info(f"Researcher analyzing plan for query (iteration {iteration})")
+        logger.info(f"Researcher analyzing plan for user {user_id} (iteration {iteration})")
         
         try:
             # Step 1: Analyze plan to determine data sources needed
@@ -279,20 +284,56 @@ COMBINATION_STRATEGY: [How to combine if using multiple sources]
         """
         try:
             from app.mcp_servers.researcher_mcp import ResearcherMCP
+            from app.services.database_service import get_db_service
             
-            # Build context from state (includes previous chats if available)
+            # Get user_id from current context (if available)
+            user_id = getattr(self, '_current_user_id', None)
+            
+            # Build context from previous chats
             context = {
-                "previous_chats": [],  # Would come from database service
-                "user_profile": {}     # Would come from user database
+                "previous_chats": [],
+                "user_profile": {}
             }
             
-            # In production, would query database for conversation history:
-            # from app.services.db_service import DBService
-            # db = DBService()
-            # context["previous_chats"] = db.get_conversation_history(user_id)
-            # context["user_profile"] = db.get_user_profile(user_id)
+            # Query MongoDB for user's conversation history
+            if user_id:
+                try:
+                    db_service = get_db_service()
+                    
+                    if db_service.is_connected():
+                        # Get user's last 5 conversations for context
+                        previous_convs = db_service.get_user_conversations(user_id, limit=5, skip=0)
+                        
+                        # Format previous conversations for context
+                        context["previous_chats"] = [
+                            {
+                                "query": conv.query,
+                                "summary": conv.title,
+                                "created_at": str(conv.created_at),
+                                "quality_score": conv.quality_score
+                            }
+                            for conv in previous_convs
+                        ]
+                        
+                        # Get user profile for additional context
+                        user_profile = db_service.get_user(user_id)
+                        if user_profile:
+                            context["user_profile"] = {
+                                "total_conversations": user_profile.total_conversations,
+                                "average_quality_score": user_profile.average_quality_score,
+                                "email": user_profile.email,
+                                "name": user_profile.name
+                            }
+                        
+                        logger.info(f"Retrieved {len(context['previous_chats'])} previous chats for user {user_id}")
+                    else:
+                        logger.warning("MongoDB not connected - no historical context available")
+                        
+                except Exception as db_error:
+                    logger.warning(f"Error fetching conversation history: {str(db_error)}")
+                    # Continue without database context - not critical
             
-            # Call REAL MCP to gather historical data using Groq
+            # Call REAL MCP to gather historical data using Groq with context
             historical_data = ResearcherMCP.get_historical_data(query, context)
             
             logger.info("Historical data gathered from DATABASE using Groq API")

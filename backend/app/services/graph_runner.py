@@ -27,6 +27,7 @@ class GraphRunner:
     def run_synchronous(
         self,
         query: str,
+        user_id: str = "",
         max_iterations: int = 3,
         verbose: bool = False
     ) -> Dict[str, Any]:
@@ -34,20 +35,23 @@ class GraphRunner:
         
         Args:
             query: User query to process
+            user_id: User identifier for database context
             max_iterations: Maximum revision cycles (default 3)
             verbose: Print detailed logging
         
         Returns:
             Final workflow state
         """
-        logger.info(f"Starting synchronous workflow for query: {query[:100]}")
+        logger.info(f"Starting synchronous workflow for user {user_id}: {query[:100]}")
         
         # Create initial state
         state = create_initial_state(query, max_iterations)
+        state["user_id"] = user_id  # Add user_id for database queries
         
         if verbose:
             print(f"\n{'='*80}")
             print(f"WORKFLOW EXECUTION: {query}")
+            print(f"USER: {user_id}")
             print(f"{'='*80}\n")
         
         try:

@@ -14,6 +14,9 @@ class WorkflowState(TypedDict, total=False):
     query: str
     """Original user query that starts the workflow."""
     
+    user_id: str
+    """User identifier for database context and conversation history."""
+    
     iteration: int
     """Current iteration count for tracking cycles (revision loops)."""
     
@@ -91,6 +94,7 @@ def create_initial_state(query: str, max_iterations: int = 3) -> WorkflowState:
     
     return WorkflowState(
         query=query,
+        user_id="",  # Will be set by caller if available
         iteration=1,
         max_iterations=max_iterations,
         plan="",
