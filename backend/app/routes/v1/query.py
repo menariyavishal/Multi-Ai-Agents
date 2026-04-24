@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify, g
 from app.services.workflow_manager import get_workflow_manager
-from app.services.database_service import get_db_service
+from app.services.database_service import get_db_service, DatabaseService
 from app.models.conversation import Conversation
 from app.core.logger import get_logger
 import uuid
@@ -136,7 +136,7 @@ def process_query():
         
         # Save conversation to MongoDB
         try:
-            db_service = get_db_service()
+            db_service: DatabaseService = get_db_service()
             
             if db_service.is_connected():
                 conversation = Conversation(
@@ -177,7 +177,7 @@ def process_query():
         logger.error(f"[{session_id}] Query processing failed: {str(e)}", exc_info=True)
         
         # Save error to history
-        db_service = get_db_service()
+        db_service: DatabaseService = get_db_service()
         db_service.save_query_history(
             user_id="anonymous",
             query_text=query,

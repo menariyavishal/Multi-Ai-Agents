@@ -2,7 +2,7 @@
 
 from flask import Blueprint, request, jsonify, Response
 from app.services.workflow_manager import get_workflow_manager
-from app.services.db_service import get_db_service
+from app.services.database_service import get_db_service, DatabaseService
 from app.core.logger import get_logger
 import uuid
 import json
@@ -134,7 +134,7 @@ def stream_query():
                 quality_score = result.get("final_quality_score", None)
                 iterations_used = result.get("final_iteration_count", 1)
                 
-                db_service = get_db_service()
+                db_service: DatabaseService = get_db_service()
                 query_id = db_service.save_query_history(
                     user_id="anonymous",
                     query_text=query,
@@ -166,7 +166,7 @@ def stream_query():
                 logger.error(f"[{session_id}] Streaming error: {str(e)}", exc_info=True)
                 
                 # Save error to history
-                db_service = get_db_service()
+                db_service: DatabaseService = get_db_service()
                 db_service.save_query_history(
                     user_id="anonymous",
                     query_text=query,
