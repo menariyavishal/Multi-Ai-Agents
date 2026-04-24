@@ -3,7 +3,7 @@
 import time
 from flask import request, g
 from app.core.logger import get_logger
-from app.middleware.request_id import get_current_request_id
+from app.middleware.request_id import get_request_id
 
 logger = get_logger(__name__)
 
@@ -16,7 +16,7 @@ def init_request_logging(app):
         """Log request start with timing."""
         g.request_start_time = time.time()
 
-        request_id = get_current_request_id()
+        request_id = get_request_id()
         user_id = getattr(g, 'user_id', 'anonymous')
 
         logger.info(
@@ -30,7 +30,7 @@ def init_request_logging(app):
         if hasattr(g, 'request_start_time'):
             duration = time.time() - g.request_start_time
 
-            request_id = get_current_request_id()
+            request_id = get_request_id()
             user_id = getattr(g, 'user_id', 'anonymous')
 
             logger.info(
@@ -48,7 +48,7 @@ def init_request_logging(app):
     def log_request_error(exception):
         """Log request errors if any occurred."""
         if exception is not None:
-            request_id = get_current_request_id()
+            request_id = get_request_id()
             user_id = getattr(g, 'user_id', 'anonymous')
 
             logger.error(
@@ -63,7 +63,7 @@ def init_request_logging(app):
 
 def log_request_metrics(method, path, status_code, duration, user_id="anonymous"):
     """Log detailed request metrics for monitoring."""
-    request_id = get_current_request_id()
+    request_id = get_request_id()
 
     metrics = {
         "method": method,
@@ -90,7 +90,7 @@ def log_slow_requests(threshold_seconds=5.0):
             duration = time.time() - start_time
 
             if duration > threshold_seconds:
-                request_id = get_current_request_id()
+                request_id = get_request_id()
                 user_id = getattr(g, 'user_id', 'anonymous')
 
                 logger.warning(
