@@ -176,17 +176,6 @@ def process_query():
         elapsed = time.time() - start_time
         logger.error(f"[{session_id}] Query processing failed: {str(e)}", exc_info=True)
         
-        # Save error to history
-        db_service: DatabaseService = get_db_service()
-        db_service.save_query_history(
-            user_id="anonymous",
-            query_text=query,
-            session_id=session_id,
-            status="failed",
-            error_message=str(e),
-            execution_time_seconds=elapsed
-        )
-        
         return jsonify({
             "status": "error",
             "session_id": session_id,
