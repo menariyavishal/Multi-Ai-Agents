@@ -104,18 +104,20 @@ class GraphRunner:
                         # Save checkpoint if enabled
                         if self.checkpointer:
                             self.checkpointer.save_checkpoint(
-                                query, state["iteration"], node_name, node_state
+                                query, state.get("iteration", 0), node_name, node_state
                             )
                         
                         # Yield updated state
                         yield node_state
                 
-                # Update state for next iteration
-                state.update(event)
+                # Update state for next iteration - merge event into state
+                for key, value in event.items():
+                    if key != "__end__":
+                        state[key] = value  # type: ignore
             
             # Record end time
             state["end_time"] = time.time()
-            state["elapsed_seconds"] = state["end_time"] - state["start_time"]
+            state["elapsed_seconds"] = state["end_time"] - state.get("start_time", time.time())
             
             logger.info(f"Workflow completed in {state['elapsed_seconds']:.2f}s")
             
@@ -153,11 +155,11 @@ class GraphRunner:
         
         # Record end time
         result["end_time"] = time.time()
-        result["elapsed_seconds"] = result["end_time"] - result["start_time"]
+        result["elapsed_seconds"] = result["end_time"] - result.get("start_time", time.time())
         
         # Save final checkpoint
         if self.checkpointer:
-            self.checkpointer.save_checkpoint(query, result["iteration"], "final", result)
+            self.checkpointer.save_checkpoint(query, result.get("iteration", 0), "final", result)
         
         logger.info(f"Workflow completed with checkpointing")
         return result

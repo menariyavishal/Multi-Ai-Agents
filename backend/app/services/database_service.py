@@ -16,8 +16,8 @@ class DatabaseService:
     
     def __init__(self):
         """Initialize MongoDB connection."""
-        self.mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/multi_ai_agents")
-        self.db_name = os.getenv("MONGODB_DB_NAME", "multi_ai_agents")
+        self.mongo_uri = os.getenv("MONGODB_URI", "mongodb://localhost:27017/nueuro_agents")
+        self.db_name = os.getenv("MONGODB_DB_NAME", "nueuro_agents")
         self.client = None
         self.db = None
         self.conversations_collection = None
@@ -50,6 +50,11 @@ class DatabaseService:
     def _create_indexes(self):
         """Create MongoDB indexes for optimized queries."""
         try:
+            # Check if collections are available
+            if self.conversations_collection is None or self.users_collection is None:
+                logger.warning("Cannot create indexes - MongoDB collections not available")
+                return
+            
             # Index for finding conversations by user_id and created_at
             self.conversations_collection.create_index([("user_id", DESCENDING), ("created_at", DESCENDING)])
             
