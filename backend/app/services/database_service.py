@@ -130,7 +130,8 @@ class DatabaseService:
                     created_at=conv["created_at"],
                     data_classification=conv["data_classification"],
                     quality_score=conv["quality_score"],
-                    processing_time_seconds=conv.get("processing_time_seconds")
+                    processing_time_seconds=conv.get("processing_time_seconds"),
+                    final_output=conv.get("final_output", "")
                 )
                 summaries.append(summary)
             

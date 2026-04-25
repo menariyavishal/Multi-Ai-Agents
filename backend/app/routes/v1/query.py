@@ -132,7 +132,7 @@ def process_query():
         logger.info(f"[{session_id}] Query processed successfully in {elapsed:.2f}s")
         
         # Extract agent outputs and metadata
-        final_state = result.get("final_state", {})
+        # Note: LangGraph puts data directly in `result`, not in `result.final_state`
         
         # Save conversation to MongoDB
         try:
@@ -143,14 +143,14 @@ def process_query():
                     user_id=user_id,
                     conversation_id=conversation_id,
                     query=query,
-                    plan=final_state.get("plan", ""),
-                    research=final_state.get("research_summary", ""),
-                    content=final_state.get("final_answer", ""),
-                    analysis=final_state.get("analysis", {}),
+                    plan=result.get("plan", ""),
+                    research=result.get("research", ""),
+                    content=summary.get("final_answer", ""),
+                    analysis=result.get("analysis", {}),
                     final_output=summary.get("final_answer", ""),
-                    data_classification=final_state.get("data_classification", "COMBINED"),
-                    quality_score=final_state.get("quality_score", 0.0),
-                    quality_level=final_state.get("quality_level", "medium"),
+                    data_classification=result.get("data_classification", "COMBINED"),
+                    quality_score=result.get("quality_score", 0.0) if isinstance(result.get("quality_score"), (int, float)) else 0.0,
+                    quality_level=result.get("quality_level", "medium") or "medium",
                     processing_time_seconds=elapsed,
                     tags=extract_tags(query)
                 )

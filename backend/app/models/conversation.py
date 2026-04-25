@@ -78,3 +78,4 @@ class ConversationSummary(BaseModel):
     data_classification: str
     quality_score: float
     processing_time_seconds: Optional[float] = None
+    final_output: str = ""

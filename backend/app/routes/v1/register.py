@@ -189,3 +189,73 @@ def validate_api_key():
             "user_id": None,
             "message": str(e)
         }), 500
+
+@register_bp.route('/login', methods=['POST'])
+def login_user():
+    """Authenticate and login a user.
+    
+    Request JSON:
+    {
+        "email": "john@example.com",
+        "password": "secure_password"
+    }
+    
+    Response JSON:
+    {
+        "status": "success" | "error",
+        "user_id": "uuid",
+        "api_key": "sk_...",
+        "username": "john_doe",
+        "message": "...",
+        "error": null
+    }
+    """
+    try:
+        if not request.is_json:
+            return jsonify({
+                "status": "error",
+                "error": "Content-Type must be application/json",
+            }), 400
+            
+        data = request.get_json()
+        email = data.get("email", "").strip()
+        password = data.get("password", "").strip()
+        
+        if not email or not password:
+            return jsonify({
+                "status": "error",
+                "error": "Email and password are required"
+            }), 400
+            
+        password_hash = hashlib.sha256(password.encode()).hexdigest()
+        
+        db_service = get_db_service()
+        auth_result = db_service.authenticate_user(email, password_hash)
+        
+        if auth_result:
+            api_key, user_id, username = auth_result
+            logger.info(f"User logged in successfully: {username}")
+            return jsonify({
+                "status": "success",
+                "user_id": user_id,
+                "api_key": api_key,
+                "username": username,
+                "message": "Login successful",
+                "error": None
+            }), 200
+        else:
+            logger.warning(f"Failed login attempt for email: {email}")
+            return jsonify({
+                "status": "error",
+                "error": "Invalid email or password",
+                "user_id": None,
+                "api_key": None
+            }), 401
+            
+    except Exception as e:
+        logger.error(f"Login failed: {str(e)}", exc_info=True)
+        return jsonify({
+            "status": "error",
+            "error": "Server error during login"
+        }), 500
+

@@ -128,7 +128,7 @@ class WorkflowManager:
                 "total_issues": review_feedback.get("total_issues", 0)
             },
             
-            "final_answer": result.get("final_answer", ""),
+            "final_answer": result.get("final_answer", "") or result.get("draft", ""),
             
             "agent_completion": {
                 "planner": result.get("planner_complete", False),

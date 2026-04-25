@@ -137,6 +137,54 @@ class DatabaseService:
         except Exception as e:
             logger.error(f"API key validation failed: {str(e)}")
             return None
+
+    def authenticate_user(self, email: str, password_hash: str) -> Optional[tuple[str, str, str]]:
+        """Authenticate a user by email and password hash.
+        
+        Args:
+            email: User's email
+            password_hash: User's hashed password
+            
+        Returns:
+            Tuple of (api_key, user_id, username) if successful, None if auth failed.
+        """
+        try:
+            conn = self._get_sqlite_connection()
+            cursor = conn.cursor()
+            
+            # Fetch user
+            cursor.execute("""
+                SELECT user_id, username FROM users
+                WHERE email = ? AND password_hash = ?
+            """, (email, password_hash))
+            
+            user_row = cursor.fetchone()
+            
+            if not user_row:
+                conn.close()
+                return None
+                
+            user_id = user_row['user_id']
+            username = user_row['username']
+            
+            # Fetch highest priority active API key for user
+            cursor.execute("""
+                SELECT api_key FROM api_keys
+                WHERE user_id = ? AND is_active = 1
+                LIMIT 1
+            """, (user_id,))
+            
+            key_row = cursor.fetchone()
+            conn.close()
+            
+            if not key_row:
+                return None
+                
+            return (key_row['api_key'], user_id, username)
+            
+        except Exception as e:
+            logger.error(f"Authentication failed for {email}: {str(e)}")
+            return None
     
     # ===== QUERY HISTORY =====
     
