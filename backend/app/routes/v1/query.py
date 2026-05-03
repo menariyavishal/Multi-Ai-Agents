@@ -128,6 +128,11 @@ def process_query():
         # Extract summary
         summary = manager.get_result_summary(result)
         
+        # DEBUG: Print summary analysis to see what we're returning
+        print(f"\n[DEBUG_SUMMARY] Analysis keys: {list(summary.get('analysis', {}).keys())}")
+        print(f"[DEBUG_SUMMARY] Has 'insights'? {'insights' in summary.get('analysis', {})}")
+        print(f"[DEBUG_SUMMARY] Full summary: {summary}\n")
+        
         elapsed = time.time() - start_time
         logger.info(f"[{session_id}] Query processed successfully in {elapsed:.2f}s")
         
@@ -163,6 +168,17 @@ def process_query():
         except Exception as db_error:
             logger.error(f"[{session_id}] Error saving to MongoDB: {str(db_error)}")
             # Don't fail the query if database save fails - data is still returned
+        
+        # FINAL DEBUG before return
+        import json
+        analysis_to_send = summary.get('analysis', {})
+        print(f"\n[FINAL_DEBUG] Type of analysis_to_send: {type(analysis_to_send)}")
+        print(f"[FINAL_DEBUG] analysis_to_send keys: {list(analysis_to_send.keys())}")
+        print(f"[FINAL_DEBUG] 'insights' in analysis_to_send: {'insights' in analysis_to_send}")
+        if 'insights' in analysis_to_send:
+            insights_val = analysis_to_send['insights']
+            print(f"[FINAL_DEBUG] insights type: {type(insights_val)}, value: {insights_val}")
+        print(f"[FINAL_DEBUG] About to jsonify\n")
         
         return jsonify({
             "status": "success",

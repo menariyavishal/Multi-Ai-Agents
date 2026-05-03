@@ -104,7 +104,14 @@ class WorkflowManager:
         review_feedback = result.get("review_feedback", {})
         analysis = result.get("analysis", {})
         
-        return {
+        # DEBUG: Log what we're working with
+        logger.info(f"DEBUG get_result_summary: analysis keys = {list(analysis.keys())}")
+        logger.info(f"DEBUG get_result_summary: has 'insights'? {('insights' in analysis)}")
+        if 'insights' in analysis:
+            logger.info(f"DEBUG: insights type = {type(analysis['insights'])}, length = {len(analysis.get('insights', []))}")
+        
+        # BUILD RETURN DICT
+        result_summary = {
             "query": result.get("query", ""),
             "status": "approved" if result.get("final_answer") else "needs_revision",
             "iterations_used": result.get("iteration", 1),
@@ -114,6 +121,9 @@ class WorkflowManager:
             "research_summary": result.get("research", "")[:200],
             
             "analysis": {
+                "patterns": analysis.get("patterns", [])[:3],  # Include top 3 patterns
+                "insights": analysis.get("insights", [])[:5],  # Include top 5 insights (NOT just count!)
+                "recommendations": analysis.get("recommendations", [])[:5],
                 "patterns_count": len(analysis.get("patterns", [])),
                 "insights_count": len(analysis.get("insights", [])),
                 "recommendations_count": len(analysis.get("recommendations", [])),
@@ -138,6 +148,14 @@ class WorkflowManager:
                 "reviewer": result.get("reviewer_complete", False)
             }
         }
+        
+        # DEBUG: Log what's being returned
+        logger.info(f"DEBUG result_summary analysis keys: {list(result_summary.get('analysis', {}).keys())}")
+        logger.info(f"DEBUG result_summary analysis insights? {'insights' in result_summary.get('analysis', {})}")
+        if 'insights' in result_summary.get('analysis', {}):
+            logger.info(f"DEBUG result_summary insights type: {type(result_summary['analysis']['insights'])}, length: {len(result_summary['analysis'].get('insights', []))}")
+        
+        return result_summary
     
     def get_execution_history(self, query: str) -> list:
         """Get execution history (checkpoints) for a query.

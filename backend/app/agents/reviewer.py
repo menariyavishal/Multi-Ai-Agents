@@ -165,17 +165,17 @@ class Reviewer(BaseAgent):
         """
         issues = []
         
-        # Check for required sections
+        # Accept either report-style or answer-style structures.
         required_sections = [
-            ("# Comprehensive Analysis Report", "Main title"),
-            ("## Executive Summary", "Executive Summary"),
-            ("## Key Findings Overview", "Key Findings"),
-            ("## Recommendations", "Recommendations"),
-            ("## Conclusion", "Conclusion")
+            (["# Detailed Answer", "# Comprehensive Analysis Report"], "Main title"),
+            (["## Direct Answer", "## Executive Summary"], "Opening answer"),
+            (["## Key Findings Overview", "## Brief Context"], "Supporting context"),
+            (["## Supporting Points", "## Supporting Recommendations", "## Recommendations"], "Supporting details"),
+            (["## Key Takeaway", "## Bottom Line", "## Conclusion"], "Closing answer")
         ]
-        
-        for marker, name in required_sections:
-            if marker not in draft:
+
+        for markers, name in required_sections:
+            if not any(marker in draft for marker in markers):
                 issues.append(f"Missing required section: {name}")
         
         # Check for markdown formatting
@@ -190,9 +190,9 @@ class Reviewer(BaseAgent):
         if len(paragraphs) < 5:
             issues.append("Report appears too short - may lack sufficient content")
         
-        # Check for tables (Key Findings Overview)
-        if "| Metric | Value |" not in draft:
-            issues.append("Missing formatted findings table")
+        # If the answer uses a report table, keep it; otherwise allow narrative answers.
+        if "| Metric | Value |" not in draft and "## Direct Answer" not in draft:
+            issues.append("Missing supporting structure for findings")
         
         logger.info(f"Structure validation found {len(issues)} issues")
         return issues
@@ -331,13 +331,13 @@ class Reviewer(BaseAgent):
         if coverage_ratio < 0.5:
             issues.append(f"Query coverage incomplete - only {coverage_ratio:.0%} of key terms addressed")
         
-        # Check for conclusions
-        if "## Conclusion" not in draft:
-            issues.append("No formal conclusion section - findings may not be contextualized")
-        
-        # Check for recommendations
-        if "## Recommendations" not in draft:
-            issues.append("No recommendations section - actionability limited")
+        # Accept either report-style or answer-style closing sections
+        if not any(marker in draft for marker in ["## Conclusion", "## Bottom Line", "## Key Takeaway", "## Direct Answer"]):
+            issues.append("No clear closing answer section - findings may not be contextualized")
+
+        # Accept either recommendations or supporting detail sections
+        if not any(marker in draft for marker in ["## Recommendations", "## Supporting Recommendations", "## Supporting Points", "## Additional Details"]):
+            issues.append("No supporting detail section - actionability limited")
         
         # Check for forward-looking statements
         forward_words = ["next", "future", "future", "recommend", "suggest", "should"]

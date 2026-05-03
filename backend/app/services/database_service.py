@@ -188,7 +188,10 @@ class DatabaseService:
             if self.users_collection is None:
                 return False
             
-            user_dict = user_profile.dict()
+            # Do not persist null fields into MongoDB.
+            # The unique email index should only apply to real email values,
+            # not auto-created stats profiles that do not have an email yet.
+            user_dict = user_profile.dict(exclude_none=True)
             result = self.users_collection.insert_one(user_dict)
             
             logger.info(f"User created: {user_profile.user_id}")

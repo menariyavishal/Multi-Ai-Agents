@@ -84,7 +84,8 @@ class Writer(BaseAgent):
             conclusion = self._write_conclusion(
                 query,
                 analysis.get("confidence_level", 0),
-                analysis.get("data_quality", "unknown")
+                analysis.get("data_quality", "unknown"),
+                analysis
             )
             logger.info("Conclusion written")
             
@@ -209,7 +210,7 @@ This report synthesizes findings into actionable recommendations for decision-ma
         insights_list = "\n".join([f"- {i}" for i in analysis.get("insights", [])[:5]])
         stats = analysis.get("statistics", {})
         
-        prompt = f"""You are a Professional Report Writer. Create a well-structured main body section that synthesizes the following research and analysis findings.
+        prompt = f"""You are a Professional Answer Writer. Create a detailed, answer-first response that synthesizes the following research and analysis findings.
 
 QUERY: {query}
 
@@ -227,13 +228,13 @@ RESEARCH STATISTICS:
 
 TASK:
 Write 2-3 comprehensive paragraphs that:
-1. Synthesize the patterns and insights into a cohesive narrative
-2. Explain the significance of findings
-3. Connect findings to the original query
-4. Use professional language and clear structure
+1. Answer the query directly and clearly
+2. Synthesize the patterns and insights into a cohesive narrative
+3. Explain the significance of findings in practical terms
+4. Connect findings to the original query without using report-style framing
 5. Include specific data points where relevant
 
-Format as markdown with clear paragraph structure. NO HEADERS. Focus on flowing prose that integrates all key findings naturally."""
+Format as markdown with clear paragraph structure. Avoid formal report language like "Conclusion" or "Executive Summary". Focus on flowing prose that reads like a detailed response."""
         
         try:
             response = self.llm.invoke(prompt)
@@ -242,12 +243,21 @@ Format as markdown with clear paragraph structure. NO HEADERS. Focus on flowing 
             return content
         except Exception as e:
             logger.error(f"Error generating main body: {str(e)}")
-            # Provide fallback
-            fallback = f"""The analysis of "{query}" reveals significant patterns and insights from comprehensive research.
+            # Provide fallback that INCLUDES ACTUAL INSIGHTS and DATA
+            insights_text = ""
+            if analysis.get('insights'):
+                insights_text = "\n\n".join(analysis.get('insights', [])[:3])
+            
+            patterns_text = ""
+            if analysis.get('patterns'):
+                patterns_text = "\nKey patterns: " + ", ".join(analysis.get('patterns', [])[:2])
+            
+            fallback = f"""The analysis of "{query}" reveals significant findings from comprehensive research.
 
-Key findings indicate {len(analysis.get('patterns', []))} distinct patterns across the studied domain. These patterns are supported by {len(analysis.get('insights', []))} major insights derived from both real-time and historical data.
+{insights_text if insights_text else "Research findings indicate patterns across the studied domain."}
+{patterns_text}
 
-The research demonstrates {analysis.get('data_quality', 'uncertain').lower()} data quality with a confidence level of {analysis.get('confidence_level', 0):.0%}, indicating the reliability of the findings for decision-making purposes."""
+The research demonstrates {analysis.get('data_quality', 'uncertain').lower()} data quality with a confidence level of {analysis.get('confidence_level', 0):.0%}, supporting the reliability of these findings for informed decision-making."""
             return fallback
     
     def _write_recommendations(
@@ -286,7 +296,8 @@ The research demonstrates {analysis.get('data_quality', 'uncertain').lower()} da
         self,
         query: str,
         confidence: float,
-        data_quality: str
+        data_quality: str,
+        analysis: Dict[str, Any]
     ) -> str:
         """Write conclusion section.
         
@@ -316,12 +327,32 @@ The research demonstrates {analysis.get('data_quality', 'uncertain').lower()} da
             if low <= confidence <= high:
                 conf_text = text
                 break
+
+        insights = analysis.get("insights", [])
+        top_insights = [str(insight).strip() for insight in insights[:2] if str(insight).strip()]
+
+        insight_note = ""
+        if top_insights:
+            insight_note = " Key findings include: " + " ".join(f"{insight}" for insight in top_insights)
+
+        numeric_insights = [
+            str(insight) for insight in insights
+            if any(char.isdigit() for char in str(insight))
+        ]
+
+        data_note = ""
+        if numeric_insights:
+            data_note = f" The key quantified finding is: {numeric_insights[0]}"
         
         conclusion = f"""## Conclusion
 
 This analysis of "{query}" provides evidence-based insights derived from comprehensive research and rigorous data analysis.
 
 {quality_assessment} {conf_text}
+
+{insight_note}
+
+{data_note}
 
 The identified patterns and insights serve as a foundation for informed decision-making and strategic planning. Organizations should monitor the evolving trends identified in this analysis and continue to gather additional data to validate and refine these findings over time.
 
@@ -352,11 +383,11 @@ Moving forward, maintaining data collection practices and periodic re-analysis w
             Complete draft document
         """
         # Create document header
-        header = f"""# Comprehensive Analysis Report
+        header = f"""# Detailed Answer
 
 **Query:** {query}
 
-**Report Generated:** Analysis completed with data quality: {analysis.get('data_quality', 'unknown').upper()}
+**Response Type:** Detailed multi-agent answer
 
 **Analysis Confidence:** {analysis.get('confidence_level', 0):.0%}
 
@@ -366,9 +397,30 @@ Moving forward, maintaining data collection practices and periodic re-analysis w
         
         # Add metadata section
         metadata = self._create_metadata_section(analysis)
+
+        # Create answer-first opening so the response reads like a direct answer
+        top_insights = analysis.get("insights", [])[:3]
+        answer_intro = "## Direct Answer\n\n"
+        if top_insights:
+            answer_intro += " ".join(str(item).strip() for item in top_insights if str(item).strip())
+        else:
+            answer_intro += "The analysis synthesizes the available research into a direct response to the question."
         
         # Compile full document
-        full_draft = header + executive_summary + "\n\n" + metadata + "\n\n" + main_body + "\n\n" + recommendations + "\n\n" + conclusion
+        full_draft = (
+            header
+            + answer_intro
+            + "\n\n"
+            + executive_summary.replace("## Executive Summary", "## Brief Context")
+            + "\n\n"
+            + metadata
+            + "\n\n"
+            + main_body
+            + "\n\n"
+            + recommendations.replace("## Recommendations", "## Supporting Points")
+            + "\n\n"
+            + conclusion.replace("## Conclusion", "## Key Takeaway")
+        )
         
         return full_draft
     
