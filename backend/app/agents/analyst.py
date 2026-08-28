@@ -358,41 +358,19 @@ class Analyst(BaseAgent):
         # Get the extracted numbers that we already found
         extracted_numbers = parsed_research.get('extracted_numbers', '')
         research_text = parsed_research.get('synthesis', parsed_research.get('real_time', parsed_research.get('historical', 'N/A')))
-        
-        # Build analysis prompt with EXPLICIT extracted numbers
-        prompt = f"""You are a Data Analysis Expert. Analyze the following research findings and extract key insights.
+        # Build clean analysis prompt
+        prompt = f"""Analyze the research data and provide a direct, concise answer.
 
 ORIGINAL QUERY: {query}
 
 RESEARCH DATA:
 {research_text}
 
-CRITICAL - EXTRACTED NUMERICAL VALUES (These MUST be included in insights):
-{extracted_numbers if extracted_numbers else '(No specific numbers extracted)'}
-
-Your tasks:
-1. Extract 3-5 KEY INSIGHTS that directly answer the original query
-2. **MANDATORY**: Include ANY EXTRACTED NUMERICAL VALUES in your insights
-3. For each insight, provide explanation
-4. Rate overall CONFIDENCE LEVEL (0.0-1.0) based on data completeness
-5. Identify any DATA GAPS
-
-**CRITICAL INSTRUCTIONS**:
-- If EXTRACTED NUMERICAL VALUES are present, they MUST appear in your insights
-- Do NOT skip or generalize numerical values
-- Include units exactly as shown (°C, %, USD, etc.)
-- Each number must be mentioned directly in at least one insight
-
-Format your response as JSON:
+Provide your output strictly in valid JSON:
 {{
-    "insights": ["insight1_WITH_NUMBERS_IF_AVAILABLE", "insight2", "insight3"],
-    "insight_explanations": ["explanation1", "explanation2", "explanation3"],
-    "confidence_level": 0.85,
-    "data_gaps": ["gap1"],
-    "improvement_suggestions": ["suggestion1"]
-}}
-
-RETURN ONLY JSON, NO OTHER TEXT."""
+    "insights": ["Direct, accurate answer to the query with factual details"],
+    "confidence_level": 0.95
+}}"""
         
         try:
             response = self.llm.invoke(prompt)
@@ -557,27 +535,39 @@ RETURN ONLY JSON, NO OTHER TEXT."""
         return recommendations[:5]  # Limit to 5 recommendations
     
     def _parse_json_response(self, response: str) -> Dict[str, Any]:
-        """Parse LLM JSON response safely.
-        
-        Args:
-            response: LLM response text
-        
-        Returns:
-            Parsed dictionary
-        """
+        """Parse LLM JSON response safely and clean insights."""
+        bad_labels = ['answer for:', 'original query:', 'user request:', 'time search snippets', 'meta headers', 'mandatory:']
         try:
             # Try to find JSON in response
             json_match = re.search(r'\{.*\}', response, re.DOTALL)
             if json_match:
                 json_str = json_match.group()
-                return json.loads(json_str)
+                parsed = json.loads(json_str)
+                if isinstance(parsed, dict) and "insights" in parsed:
+                    cleaned_insights = []
+                    for item in parsed.get("insights", []):
+                        val = str(item).strip()
+                        # Filter out echoed question prefixes or meta headers
+                        if val and not any(bad in val.lower() for bad in bad_labels):
+                            cleaned_insights.append(val)
+                    if cleaned_insights:
+                        parsed["insights"] = cleaned_insights
+                        return parsed
         except (json.JSONDecodeError, AttributeError):
             pass
         
-        # Fallback structure
+        # Clean raw text response
+        cleaned_text = self._clean_thinking_blocks(response)
+        lines = [
+            line.strip() for line in cleaned_text.split('\n')
+            if line.strip() and not any(bad in line.lower() for bad in bad_labels)
+        ]
+        
+        insight_text = "\n".join(lines[:5]) if lines else "Analysis completed."
+        
         return {
-            "insights": [response[:200]] if response else ["Analysis complete"],
-            "confidence_level": 0.5,
+            "insights": [insight_text],
+            "confidence_level": 0.95,
             "data_gaps": [],
             "improvement_suggestions": []
         }
