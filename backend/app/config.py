@@ -5,11 +5,12 @@ Loads environment variables and provides config classes.
 import os
 from dotenv import load_dotenv
 
-# Load .env file
-load_dotenv()
-
 # Get the absolute path to the project root (backend/ directory)
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Load .env file with explicit path and override=True
+env_path = os.path.join(BASE_DIR, '.env')
+load_dotenv(dotenv_path=env_path, override=True)
 
 class Config:
     """Base configuration - common settings for all environments."""
@@ -19,6 +20,7 @@ class Config:
     
     # LLM API Keys
     GROQ_API_KEY = os.environ.get('GROQ_API_KEY')
+    GEMINI_API_KEY = os.environ.get('GEMINI_API_KEY')
     
     # Database paths (absolute to avoid working directory issues)
     SQLITE_PATH = os.environ.get('SQLITE_PATH', os.path.join(BASE_DIR, 'data', 'nueuro.db'))
