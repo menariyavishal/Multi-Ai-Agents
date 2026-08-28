@@ -123,8 +123,8 @@ class Reviewer(BaseAgent):
                 }
             }
             
-            # Determine final answer based on recommendation
-            final_answer = draft if recommendation == "PASS" else ""
+            # Determine final answer (always deliver draft content to user)
+            final_answer = draft
             
             return {
                 **state,
