@@ -739,10 +739,22 @@ Create an analysis that includes:
         
         formatted = "Past Conversations:\n"
         for i, conv in enumerate(conversations, 1):
-            formatted += f"\n{i}. Query: {conv.get('query', 'N/A')}\n"
-            formatted += f"   Quality: {conv.get('quality_score', 'N/A')}/10\n"
-            formatted += f"   Date: {conv.get('created_at', 'N/A')}\n"
+            q = str(conv.get('query', 'N/A')).strip()
+            if not any(bad in q.lower() for bad in ['answer for:', 'time search snippets', 'meta headers']):
+                formatted += f"\n{i}. Query: {q}\n"
+                formatted += f"   Quality: {conv.get('quality_score', 'N/A')}/10\n"
+                formatted += f"   Date: {conv.get('created_at', 'N/A')}\n"
         
+        return formatted
+
+    def _format_gathered_data(self, gathered_data: Dict[str, str]) -> str:
+        """Format gathered data for LLM synthesis."""
+        import re
+        formatted = ""
+        for source, data in gathered_data.items():
+            clean_data = str(data)
+            clean_data = re.sub(r'^[•\-]\s*(?:Answer for|Query|time search|formatted).*?$', '', clean_data, flags=re.IGNORECASE | re.MULTILINE)
+            formatted += f"\n{source}:\n{clean_data}\n"
         return formatted
     
     def _synthesize_research(self, gathered_data: Dict[str, str], 
