@@ -4,6 +4,10 @@ FAST Project Verification - No LLM initialization
 """
 import sys
 import os
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+
 sys.path.insert(0, '/'.join(os.path.abspath(__file__).split('\\')[:-2]))
 
 print("\n" + "="*80)
@@ -20,7 +24,7 @@ try:
     from app.agents.reviewer import Reviewer
     print("✓ READY")
 except Exception as e:
-    print(f"✗ FAILED: {e}")
+    print(f"[FAILED]: {e}")
     sys.exit(1)
 
 print("[2] MongoDB Database: ", end="", flush=True)
@@ -29,7 +33,7 @@ try:
     db = get_db_service()
     print("✓ CONNECTED" if db.is_connected() else "✓ OK")
 except Exception as e:
-    print(f"✗ FAILED: {e}")
+    print(f"[FAILED]: {e}")
     sys.exit(1)
 
 print("[3] Workflow State: ", end="", flush=True)
@@ -38,7 +42,7 @@ try:
     state = create_initial_state("q", user_id="u1")
     print("✓ OK")
 except Exception as e:
-    print(f"✗ FAILED: {e}")
+    print(f"[FAILED]: {e}")
     sys.exit(1)
 
 print("[4] Conversation Model: ", end="", flush=True)
@@ -47,7 +51,7 @@ try:
     conv = Conversation(user_id="u1", conversation_id="c1", query="q")
     print("✓ OK")
 except Exception as e:
-    print(f"✗ FAILED: {e}")
+    print(f"[FAILED]: {e}")
     sys.exit(1)
 
 print("[5] Intelligence Classification: ", end="", flush=True)
@@ -58,7 +62,7 @@ try:
     assert hasattr(researcher, '_parse_intelligent_analysis')
     print("✓ ENABLED")
 except Exception as e:
-    print(f"✗ FAILED: {e}")
+    print(f"[FAILED]: {e}")
     sys.exit(1)
 
 print("[6] Real-Time Data: ", end="", flush=True)
@@ -80,7 +84,7 @@ try:
     app = create_app()
     print("✓ READY")
 except Exception as e:
-    print(f"✗ FAILED: {e}")
+    print(f"[FAILED]: {e}")
     sys.exit(1)
 
 print("[10] Workflow Manager: ", end="", flush=True)
@@ -89,18 +93,18 @@ try:
     wfm = WorkflowManager()
     print("✓ READY")
 except Exception as e:
-    print(f"✗ FAILED: {e}")
+    print(f"[FAILED]: {e}")
     sys.exit(1)
 
 print("\n" + "="*80)
-print("✅ ALL SYSTEMS OPERATIONAL")
+print("ALL SYSTEMS OPERATIONAL")
 print("="*80 + "\n")
 
-print("AGENTS: ✓ Planner → Researcher → Analyst → Writer → Reviewer")
-print("DATABASE: ✓ MongoDB connected with user isolation")
+print("AGENTS: Planner -> Researcher -> Analyst -> Writer -> Reviewer")
+print("DATABASE: MongoDB connected with user isolation")
 print("DATA TYPES:")
-print("  ✓ REAL_TIME: Web APIs, Weather, News, Financial, Search")
-print("  ✓ HISTORICAL: Past conversations + Groq knowledge")
-print("  ✓ COMBINED: Intelligent synthesis of both")
-print("INTELLIGENCE: ✓ Agent-based (not keyword-based)")
+print("  - REAL_TIME: Web APIs, Weather, News, Financial, Search")
+print("  - HISTORICAL: Past conversations + Groq knowledge")
+print("  - COMBINED: Intelligent synthesis of both")
+print("INTELLIGENCE: Agent-based (not keyword-based)")
 print("\n" + "="*80 + "\n")

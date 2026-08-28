@@ -1,86 +1,98 @@
-import { Map, Search, LineChart, PenTool, CheckCircle, ArrowRight } from 'lucide-react';
+import { Map, Search, LineChart, PenTool, CheckCircle } from 'lucide-react';
 import { AgentNode, AgentState } from './AgentNode';
 import { GraphState } from '../../types/graphState';
 import { motion } from 'framer-motion';
 
-// Icons for each agent
 const agentConfig = [
-  { id: 'planner', name: 'Planner', icon: <Map className="w-full h-full p-1" /> },
-  { id: 'researcher', name: 'Researcher', icon: <Search className="w-full h-full p-1" /> },
-  { id: 'analyst', name: 'Analyst', icon: <LineChart className="w-full h-full p-1" /> },
-  { id: 'writer', name: 'Writer', icon: <PenTool className="w-full h-full p-1" /> },
-  { id: 'reviewer', name: 'Reviewer', icon: <CheckCircle className="w-full h-full p-1" /> },
+  { id: 'planner', name: 'Planner', icon: <Map className="w-full h-full" /> },
+  { id: 'researcher', name: 'Researcher', icon: <Search className="w-full h-full" /> },
+  { id: 'analyst', name: 'Analyst', icon: <LineChart className="w-full h-full" /> },
+  { id: 'writer', name: 'Writer', icon: <PenTool className="w-full h-full" /> },
+  { id: 'reviewer', name: 'Reviewer', icon: <CheckCircle className="w-full h-full" /> },
 ];
 
 interface AgentPipelineProps {
   graphState: GraphState | null;
-  // Currently active agent from stream, if available
-  activeStreamNode?: string | null; 
+  activeStreamNode?: string | null;
+  selectedAgentId?: string | null;
+  onSelectAgent?: (id: string) => void;
 }
 
-export function AgentPipeline({ graphState, activeStreamNode }: AgentPipelineProps) {
+export function AgentPipeline({ graphState, activeStreamNode, selectedAgentId, onSelectAgent }: AgentPipelineProps) {
   
-  // Calculate the state for a specific agent node given current graphState and stream updates
   const getAgentState = (id: string): AgentState => {
     if (!graphState && !activeStreamNode) return 'pending';
-    
-    // If we're streaming and this is the active node from SSE
     if (activeStreamNode === id) return 'processing';
-    
-    // If the graph state says it failed
     if (graphState?.status === 'failed') return 'error';
     
-    // Check if the agent has completed in previous iterations or final state
-    // We assume an agent is 'completed' if the graph state has data for it 
-    // or if the graphState returned agent_completion metadata
     const completed = graphState?.agent_completion?.[id as keyof typeof graphState.agent_completion];
-    
     if (completed) return 'completed';
     
-    // Determine the current step implicitly if no activeStreamNode
-    // This connects 'pending' state transitions to actual backend values
     if (graphState) {
-        if (!graphState.plan && id === 'planner') return 'processing';
-        if (graphState.plan && !graphState.research_summary && id === 'researcher') return 'processing';
-        if (graphState.research_summary && !graphState.analysis && id === 'analyst') return 'processing';
-        if (graphState.analysis && !graphState.draft && id === 'writer') return 'processing';
-        if (graphState.draft && !graphState.review && id === 'reviewer') return 'processing';
+      if (graphState.status === 'completed' || graphState.status === 'approved' || graphState.status === 'needs_revision') {
+        return 'completed';
+      }
+      if (!graphState.plan && id === 'planner') return 'processing';
+      if (graphState.plan && !graphState.research_summary && id === 'researcher') return 'processing';
+      if (graphState.research_summary && !graphState.analysis && id === 'analyst') return 'processing';
+      if (graphState.analysis && !graphState.draft && id === 'writer') return 'processing';
+      if (graphState.draft && !graphState.review && id === 'reviewer') return 'processing';
     }
     
     return 'pending';
   };
 
+  const getProgressPercentage = (): number => {
+    if (!graphState && !activeStreamNode) return 0;
+    if (graphState?.status === 'completed' || graphState?.status === 'approved' || graphState?.status === 'needs_revision') {
+      return 100;
+    }
+    if (activeStreamNode) {
+      const idx = agentConfig.findIndex(a => a.id === activeStreamNode);
+      return ((idx + 0.5) / (agentConfig.length - 1)) * 100;
+    }
+    return 20;
+  };
+
   return (
-    <div className="w-full py-8">
-      <div className="flex w-full items-center justify-between relative px-4 md:px-8 max-w-4xl mx-auto overflow-x-auto pb-4 hide-scrollbar">
+    <div className="w-full py-6 relative">
+      {/* Node Visualizer Graph */}
+      <div className="flex w-full items-center justify-between relative px-2 sm:px-6 max-w-5xl mx-auto overflow-x-auto pb-4 custom-scrollbar">
         
-        {/* Connection Line Background */}
-        <div className="absolute top-8 left-16 right-16 h-1 -z-10 bg-glass-border">
+        {/* Background Energy Flow Cable */}
+        <div className="absolute top-1/2 left-12 right-12 h-1.5 -z-10 -translate-y-1/2 bg-black/60 rounded-full border border-white/10 overflow-hidden">
           <motion.div 
-            className="h-full bg-gradient-to-r from-brand-violet to-brand-cyan" 
+            className="h-full bg-gradient-to-r from-neon-violet via-neon-cyan to-neon-magenta shadow-lg shadow-neon-cyan/50" 
             initial={{ width: '0%' }}
-            animate={{ 
-                width: (graphState?.status === 'completed' || graphState?.status === 'approved' || graphState?.status === 'needs_revision') ? '100%' : 
-                       activeStreamNode ? `${(agentConfig.findIndex(a => a.id === activeStreamNode) / (agentConfig.length - 1)) * 100}%` : '0%'
-            }}
-            transition={{ duration: 0.5 }}
+            animate={{ width: `${getProgressPercentage()}%` }}
+            transition={{ duration: 0.6, ease: 'easeOut' }}
           />
         </div>
 
+        {/* SVG Laser Motion Path */}
+        <svg className="absolute inset-0 w-full h-full -z-10 pointer-events-none hidden sm:block">
+          <line 
+            x1="10%" 
+            y1="50%" 
+            x2="90%" 
+            y2="50%" 
+            stroke="rgba(0, 240, 255, 0.25)" 
+            strokeWidth="2" 
+            className="laser-path"
+          />
+        </svg>
+
         {agentConfig.map((agent, index) => (
-          <div key={agent.id} className="flex items-center flex-shrink-0 relative">
+          <div key={agent.id} className="flex items-center flex-shrink-0 relative my-2">
             <AgentNode
               id={agent.id}
               name={agent.name}
               icon={agent.icon}
               state={getAgentState(agent.id)}
               index={index}
+              isSelected={selectedAgentId === agent.id}
+              onSelect={onSelectAgent}
             />
-            {index < agentConfig.length - 1 && (
-              <div className="hidden sm:block absolute left-full ml-[-20px] w-24 z-0">
-                  {/* Visual spacer indicator */}
-              </div>
-            )}
           </div>
         ))}
       </div>

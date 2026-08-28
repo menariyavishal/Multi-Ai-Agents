@@ -5,9 +5,10 @@ import logging
 import os
 from logging.handlers import RotatingFileHandler
 
+import sys
+
 def get_logger(name: str) -> logging.Logger:
-    """
-    Get a logger instance. Ensures handlers are added only once per logger name.
+    """Get a logger instance. Ensures handlers are added only once per logger name.
     Logs go to console (INFO level) and a rotating file (DEBUG level).
     """
     logger = logging.getLogger(name)
@@ -16,21 +17,22 @@ def get_logger(name: str) -> logging.Logger:
     if not logger.handlers:
         logger.setLevel(logging.DEBUG)
         
-        # Console handler (human-readable)
-        console_handler = logging.StreamHandler()
+        # Console handler (human-readable UTF-8)
+        console_handler = logging.StreamHandler(sys.stdout)
         console_handler.setLevel(logging.INFO)
         console_format = logging.Formatter(
             '%(levelname)s - %(name)s - %(message)s'
         )
         console_handler.setFormatter(console_format)
         
-        # File handler (with timestamps, rotates at 5MB)
+        # File handler (with timestamps, rotates at 5MB, UTF-8 encoded)
         log_dir = os.path.join(os.getcwd(), 'logs')
         os.makedirs(log_dir, exist_ok=True)
         file_handler = RotatingFileHandler(
             os.path.join(log_dir, 'app.log'),
             maxBytes=5_000_000,  # 5 MB
-            backupCount=3
+            backupCount=3,
+            encoding='utf-8'
         )
         file_handler.setLevel(logging.DEBUG)
         file_format = logging.Formatter(

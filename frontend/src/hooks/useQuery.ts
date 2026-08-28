@@ -12,10 +12,7 @@ export function useQuery() {
   const { user } = useAuth();
 
   const submitQuery = useCallback(async (query: string) => {
-    if (!user?.userId) {
-      setError("You must be logged in to submit a query");
-      return null;
-    }
+    const activeUserId = user?.userId || localStorage.getItem('user_id') || 'guest_operator';
 
     setIsLoading(true);
     setError(null);
@@ -23,8 +20,7 @@ export function useQuery() {
     setResult(null);
 
     try {
-      // Backend returns initial response with session_id
-      const data = await queryService.submitQuery(query, user.userId);
+      const data = await queryService.submitQuery(query, activeUserId);
       if (data.status === 'success') {
         setSessionId(data.session_id);
         setResult(data.result);
@@ -35,8 +31,6 @@ export function useQuery() {
       }
     } catch (err: any) {
       console.error("Query Error:", err);
-      // Wait, let's fix the type: error could be generic Error or AxiosError
-      // using any for now but should be more specific
       setError(err.response?.data?.error || err.message || "An unexpected error occurred");
       return null;
     } finally {

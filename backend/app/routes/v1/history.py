@@ -74,7 +74,7 @@ def get_conversation_history():
         
         # Get total count for pagination info
         total_count = 0
-        if db_service.is_connected():
+        if db_service.is_connected() and db_service.conversations_collection is not None:
             try:
                 total_count = db_service.conversations_collection.count_documents({"user_id": user_id})
             except:
@@ -85,7 +85,7 @@ def get_conversation_history():
         return jsonify({
             "status": "success",
             "user_id": user_id,
-            "conversations": [conv.dict() for conv in conversations],
+            "conversations": [conv.model_dump() if hasattr(conv, "model_dump") else conv.dict() for conv in conversations],
             "total_count": total_count,
             "limit": limit,
             "skip": skip,
@@ -174,7 +174,7 @@ def get_conversation(conversation_id):
         
         return jsonify({
             "status": "success",
-            "conversation": conversation.dict(),
+            "conversation": conversation.model_dump() if hasattr(conversation, "model_dump") else conversation.dict(),
             "error": None
         }), 200
     
@@ -254,7 +254,7 @@ def search_conversations():
             "status": "success",
             "user_id": user_id,
             "query": search_query,
-            "results": [result.dict() for result in results],
+            "results": [result.model_dump() if hasattr(result, "model_dump") else result.dict() for result in results],
             "total_found": len(results),
             "error": None
         }), 200
@@ -325,6 +325,7 @@ def get_user_stats():
 
 
 # ========== Original Checkpoint History Endpoints ==========
+@history_bp.route('/history/<query_hash>', methods=['GET'])
 def get_query_history(query_hash):
     """Get execution history (checkpoints) for a query.
     

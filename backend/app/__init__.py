@@ -39,6 +39,14 @@ def create_app(config_name: str = "development") -> Flask:
     
     logger.info(f"Creating Flask app with config: {config_name}")
     
+    # Enable CORS for frontend integration
+    @app.after_request
+    def add_cors_headers(response):
+        response.headers['Access-Control-Allow-Origin'] = '*'
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, X-API-Key'
+        response.headers['Access-Control-Allow-Methods'] = 'GET, POST, PUT, DELETE, OPTIONS'
+        return response
+    
     # Register error handlers
     @app.errorhandler(404)
     def not_found(e):

@@ -53,12 +53,6 @@ def stream_query():
                 "error": "Query is required"
             }), 400
         
-        if len(query) > 1000:
-            return jsonify({
-                "status": "error",
-                "error": "Query must be less than 1000 characters"
-            }), 400
-        
         max_iterations = data.get("max_iterations", 3)
         try:
             max_iterations = int(max_iterations)

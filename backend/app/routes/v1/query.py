@@ -93,16 +93,6 @@ def process_query():
                 "result": None
             }), 400
         
-        if len(query) > 1000:
-            logger.warning(f"[{session_id}] Query too long: {len(query)} chars")
-            return jsonify({
-                "status": "error",
-                "session_id": session_id,
-                "conversation_id": None,
-                "error": "Query must be less than 1000 characters",
-                "result": None
-            }), 400
-        
         # Extract max_iterations
         max_iterations = data.get("max_iterations", 3)
         try:

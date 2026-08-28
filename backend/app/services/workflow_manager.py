@@ -198,17 +198,5 @@ _workflow_manager: Optional[WorkflowManager] = None
 def get_workflow_manager(
     enable_checkpointing: bool = True
 ) -> WorkflowManager:
-    """Get or create global WorkflowManager instance.
-    
-    Args:
-        enable_checkpointing: Whether to enable checkpointing
-    
-    Returns:
-        Global WorkflowManager instance
-    """
-    global _workflow_manager
-    
-    if _workflow_manager is None:
-        _workflow_manager = WorkflowManager(enable_checkpointing=enable_checkpointing)
-    
-    return _workflow_manager
+    """Get fresh WorkflowManager instance per request."""
+    return WorkflowManager(enable_checkpointing=enable_checkpointing)

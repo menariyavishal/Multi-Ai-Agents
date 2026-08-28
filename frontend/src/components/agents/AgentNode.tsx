@@ -10,56 +10,81 @@ interface AgentNodeProps {
   icon: ReactNode;
   state: AgentState;
   index: number;
+  isSelected?: boolean;
+  onSelect?: (id: string) => void;
 }
 
-export function AgentNode({ name, icon, state, index }: AgentNodeProps) {
+export function AgentNode({ id, name, icon, state, index, isSelected, onSelect }: AgentNodeProps) {
   const getColors = () => {
     switch (state) {
       case 'processing':
-        return 'border-brand-cyan bg-brand-cyan/10 text-brand-cyan ring-4 ring-brand-cyan/20';
+        return 'border-neon-cyan bg-neon-cyan/15 text-neon-cyan ring-4 ring-neon-cyan/25 shadow-lg shadow-neon-cyan/30';
       case 'completed':
-        return 'border-brand-violet bg-brand-violet/20 text-foreground';
+        return 'border-neon-violet bg-neon-violet/20 text-neon-violet shadow-lg shadow-neon-violet/20';
       case 'error':
-        return 'border-destructive bg-destructive/10 text-destructive';
+        return 'border-destructive bg-destructive/15 text-destructive shadow-lg shadow-destructive/30';
       case 'pending':
       default:
-        return 'border-glass-border bg-glass/50 text-muted-foreground opacity-60';
+        return 'border-white/10 bg-black/40 text-muted-foreground opacity-60 hover:opacity-100 hover:border-white/20';
     }
   };
 
-  const isPulsing = state === 'processing';
+  const getStatusBadge = () => {
+    switch (state) {
+      case 'processing': return <span className="text-[10px] font-mono text-neon-cyan uppercase font-bold tracking-wider animate-pulse">EXECUTING</span>;
+      case 'completed': return <span className="text-[10px] font-mono text-emerald-400 uppercase font-bold tracking-wider">VERIFIED</span>;
+      case 'error': return <span className="text-[10px] font-mono text-destructive uppercase font-bold tracking-wider">ERROR</span>;
+      default: return <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-wider">STANDBY</span>;
+    }
+  };
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1, duration: 0.4 }}
-      className="flex flex-col items-center group relative z-10"
+      initial={{ opacity: 0, y: 25, scale: 0.9 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      transition={{ delay: index * 0.08, duration: 0.4, type: 'spring' }}
+      whileHover={{ scale: 1.05, y: -4 }}
+      whileTap={{ scale: 0.96 }}
+      onClick={() => onSelect?.(id)}
+      className="flex flex-col items-center group relative z-10 cursor-pointer select-none"
     >
+      {/* Unity Node Card Container */}
       <div 
         className={cn(
-          "relative flex h-16 w-16 items-center justify-center rounded-2xl border-2 backdrop-blur-sm transition-all duration-500",
+          "relative flex flex-col items-center justify-center p-3 rounded-2xl border-2 backdrop-blur-xl transition-all duration-300 min-w-[90px]",
           getColors(),
-          isPulsing && "animate-pulse-glow"
+          isSelected && "ring-4 ring-neon-cyan/50 border-neon-cyan"
         )}
       >
-        {/* Glow effect matching border color but softer */}
-        {isPulsing && (
-          <div className="absolute inset-0 -z-10 rounded-2xl bg-brand-cyan opacity-20 blur-xl" />
+        {/* Input Execution Socket Dot */}
+        <div className="absolute -left-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-black border-2 border-neon-cyan shadow-sm" />
+        
+        {/* Output Execution Socket Dot */}
+        <div className="absolute -right-2 top-1/2 -translate-y-1/2 w-3 h-3 rounded-full bg-black border-2 border-neon-violet shadow-sm" />
+
+        {/* Glow ambient highlight */}
+        {state === 'processing' && (
+          <div className="absolute inset-0 -z-10 rounded-2xl bg-neon-cyan opacity-30 blur-xl animate-pulse" />
         )}
-        <div className="z-10 h-8 w-8">
+
+        {/* Node Icon */}
+        <div className="z-10 h-7 w-7 mb-1.5 flex items-center justify-center">
           {icon}
         </div>
-      </div>
-      
-      <div className="mt-3 text-center">
+
+        {/* Node Name */}
         <p className={cn(
-          "text-sm font-semibold transition-colors duration-300", 
-          state === 'processing' ? 'text-brand-cyan font-bold' : 
-          state === 'pending' ? 'text-muted-foreground' : 'text-foreground'
+          "text-xs font-bold font-heading tracking-wide transition-colors duration-300 text-center", 
+          state === 'processing' ? 'text-neon-cyan' : 
+          state === 'completed' ? 'text-foreground' : 'text-muted-foreground'
         )}>
           {name}
         </p>
+
+        {/* State Tag */}
+        <div className="mt-1">
+          {getStatusBadge()}
+        </div>
       </div>
     </motion.div>
   );

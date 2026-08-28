@@ -307,10 +307,14 @@ class TestMongoDBOperations:
     
     def test_get_full_state_from_mongo_no_connection(self, db_service):
         """Test retrieving state when MongoDB is unavailable."""
-        state = db_service.get_full_state_from_mongo("session_123")
-        
-        # Should return None if MongoDB not available
-        assert state is None
+        client_attr = '_mongo_client' if hasattr(db_service, '_mongo_client') else 'client'
+        original_client = getattr(db_service, client_attr, None)
+        try:
+            setattr(db_service, client_attr, None)
+            state = db_service.get_full_state_from_mongo("session_123_nonexistent_test")
+            assert state is None
+        finally:
+            setattr(db_service, client_attr, original_client)
 
 
 class TestDatabaseServiceSingleton:

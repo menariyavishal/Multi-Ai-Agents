@@ -23,11 +23,13 @@ def test_api_integration():
     
     # 1. Test user registration
     print("\n1. Testing user registration...")
+    import uuid
+    uid_str = uuid.uuid4().hex[:8]
     response = client.post(
         '/api/v1/register',
         json={
-            "username": "integration_test_user",
-            "email": "integration@test.com",
+            "username": f"integration_user_{uid_str}",
+            "email": f"integration_{uid_str}@test.com",
             "password": "Test@Password123"
         },
         content_type='application/json'

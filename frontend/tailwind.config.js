@@ -61,6 +61,21 @@ export default {
           violet: "#8b5cf6",
           cyan: "#06b6d4",
           fuchsia: "#d946ef",
+        },
+        unity: {
+          dark: "#080b11",
+          card: "#0f1422",
+          panel: "#161c2e",
+          border: "rgba(0, 240, 255, 0.15)",
+          accent: "#00f0ff",
+        },
+        neon: {
+          cyan: "#00f0ff",
+          violet: "#8b5cf6",
+          magenta: "#f000ff",
+          emerald: "#10b981",
+          amber: "#f59e0b",
+          rose: "#f43f5e"
         }
       },
       borderRadius: {
@@ -71,6 +86,7 @@ export default {
       fontFamily: {
         sans: ['Inter', ...defaultTheme.fontFamily.sans],
         heading: ['Outfit', ...defaultTheme.fontFamily.sans],
+        mono: ['Fira Code', 'JetBrains Mono', 'Consolas', ...defaultTheme.fontFamily.mono],
       },
       keyframes: {
         "accordion-down": {
@@ -83,13 +99,28 @@ export default {
         },
         "pulse-glow": {
           '0%, 100%': { opacity: "1", transform: "scale(1)" },
-          '50%': { opacity: ".8", transform: "scale(1.05)" },
+          '50%': { opacity: ".85", transform: "scale(1.04)" },
+        },
+        "laser-pulse": {
+          '0%': { strokeDashoffset: '100' },
+          '100%': { strokeDashoffset: '0' },
+        },
+        "shimmer": {
+          '0%': { backgroundPosition: '-200% 0' },
+          '100%': { backgroundPosition: '200% 0' },
+        },
+        "float": {
+          '0%, 100%': { transform: 'translateY(0px)' },
+          '50%': { transform: 'translateY(-6px)' },
         }
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
         "accordion-up": "accordion-up 0.2s ease-out",
         "pulse-glow": "pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite",
+        "laser-pulse": "laser-pulse 1.5s linear infinite",
+        "shimmer": "shimmer 2.5s linear infinite",
+        "float": "float 4s ease-in-out infinite",
       },
     },
   },
