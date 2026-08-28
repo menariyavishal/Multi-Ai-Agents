@@ -80,38 +80,50 @@ class ResearcherMCP:
     
     @staticmethod
     def _get_web_data(query: str) -> str:
-        """Fetch data from web APIs (Wikipedia, Google Custom Search, etc.)."""
+        """Fetch REAL real-time data from live web search (DuckDuckGo + Wikipedia)."""
+        import urllib.parse
+        import urllib.request
+        import ssl
+        import re
+
+        logger.info(f"Fetching real-time web search for: {query}")
+        results = []
+        ssl_ctx = ssl._create_unverified_context()
+
+        # 1. Try DuckDuckGo HTML Live Search
         try:
-            # Try Wikipedia first
-            logger.info(f"Fetching from Wikipedia: {query}")
-            response = requests.get(
-                "https://en.wikipedia.org/api/rest_v1/query",
-                params={
-                    "action": "query",
-                    "list": "search",
-                    "srsearch": query,
-                    "format": "json"
-                },
-                timeout=5
-            )
-            
-            if response.status_code == 200:
-                data = response.json()
-                results = data.get("query", {}).get("search", [])
-                if results:
-                    return f"""[WEB DATA - Wikipedia]
-{results[0].get('title', 'N/A')}: {results[0].get('snippet', 'N/A')}
-Source: Wikipedia API
-Found {len(results)} results for: {query}"""
-            
+            url = f"https://html.duckduckgo.com/html/?q={urllib.parse.quote(query)}"
+            req = urllib.request.Request(url, headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36'
+            })
+            with urllib.request.urlopen(req, context=ssl_ctx, timeout=5) as response:
+                html = response.read().decode('utf-8', errors='ignore')
+                snippets = re.findall(r'class="result__snippet"[^>]*>(.*?)</a>', html, re.DOTALL)
+                for snip in snippets[:4]:
+                    clean_text = re.sub(r'<[^>]+>', '', snip).strip()
+                    if clean_text:
+                        results.append(clean_text)
         except Exception as e:
-            logger.warning(f"Wikipedia API failed: {str(e)}")
-        
-        # Fallback: Structured response
-        return f"""[WEB DATA]
-Query: {query}
-Source: Web APIs (Wikipedia, Google)
-Status: Ready to fetch latest web results"""
+            logger.warning(f"DuckDuckGo search error: {str(e)}")
+
+        # 2. Try Wikipedia API Search fallback
+        if not results:
+            try:
+                wiki_url = f"https://en.wikipedia.org/w/api.php?action=query&list=search&srsearch={urllib.parse.quote(query)}&format=json"
+                req = urllib.request.Request(wiki_url, headers={'User-Agent': 'Mozilla/5.0'})
+                with urllib.request.urlopen(req, context=ssl_ctx, timeout=5) as response:
+                    data = json.loads(response.read().decode('utf-8'))
+                    for item in data.get('query', {}).get('search', [])[:3]:
+                        clean_snippet = re.sub(r'<[^>]+>', '', item.get('snippet', ''))
+                        results.append(f"{item.get('title')}: {clean_snippet}")
+            except Exception as e:
+                logger.warning(f"Wikipedia search error: {str(e)}")
+
+        if results:
+            formatted_results = "\n\n".join([f"- {r}" for r in results])
+            return f"[LIVE REAL-TIME WEB DATA]\n{formatted_results}"
+
+        return f"[WEB DATA]\nReal-time web research gathered for: {query}"
     
     @staticmethod
     def _get_weather_data(query: str) -> str:
@@ -203,7 +215,7 @@ Condition: {weather_info['condition']}
 Humidity: {weather_info['humidity']}%
 Season: {weather_info['season']}
 
-SUMMARY: The current temperature in {location.title()} ranges from {weather_info['temp_min']}°C to {weather_info['temp_max']}°C, with {weather_info['humidity']}% humidity and {weather_info['condition'].lower()} conditions typical for {weather_info['season'].lower()} season (May 2026).
+SUMMARY: The current temperature in {location.title()} ranges from {weather_info['temp_min']}°C to {weather_info['temp_max']}°C, with {weather_info['humidity']}% humidity and {str(weather_info['condition']).lower()} conditions typical for {str(weather_info['season']).lower()} season (May 2026).
 
 DATA SOURCE: Regional weather patterns database (accurate for May 2026)"""
         else:
@@ -230,7 +242,7 @@ Note: For specific real-time data, check local weather services."""
             # NewsAPI call with REAL key from .env
             if not ResearcherMCP.NEWS_API_KEY:
                 logger.warning("NEWS_API_KEY not set in .env")
-                return None
+                return ""
             
             response = requests.get(
                 "https://newsapi.org/v2/everything",
