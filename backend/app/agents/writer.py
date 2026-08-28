@@ -177,8 +177,6 @@ class Writer(BaseAgent):
         
         summary = f"""## Executive Summary
 
-This comprehensive analysis addresses: **{query}**
-
 The investigation identified **{patterns_count} key patterns** and **{insights_count} significant insights** based on multi-source research and data synthesis. The analysis confidence level is **{confidence:.0%}**, with data quality assessed as **{data_quality.upper()}**.
 
 This report synthesizes findings into actionable recommendations for decision-making and strategic planning."""
@@ -210,31 +208,19 @@ This report synthesizes findings into actionable recommendations for decision-ma
         insights_list = "\n".join([f"- {i}" for i in analysis.get("insights", [])[:5]])
         stats = analysis.get("statistics", {})
         
-        prompt = f"""You are a Professional Answer Writer. Create a detailed, answer-first response that synthesizes the following research and analysis findings.
+        prompt = f"""You are an elite AI assistant (like ChatGPT or Claude). Write an outstanding, detailed, innovative, and comprehensive response to the user's request.
 
-QUERY: {query}
+USER REQUEST: {query}
 
-KEY PATTERNS IDENTIFIED:
-{patterns_list}
+CONTEXT / RESEARCH DATA:
+{insights_list if insights_list.strip() else 'Use your internal domain knowledge to generate a top-tier answer.'}
+{research[:1000] if research else ''}
 
-MAIN INSIGHTS:
-{insights_list}
-
-RESEARCH STATISTICS:
-- Total data analyzed: {stats.get('total_words', 0)} words from {stats.get('data_sources', 0)} sources
-- Data coverage: {stats.get('data_coverage_percentage', 0):.1f}%
-- Real-time data: Available
-- Historical context: Available
-
-TASK:
-Write 2-3 comprehensive paragraphs that:
-1. Answer the query directly and clearly
-2. Synthesize the patterns and insights into a cohesive narrative
-3. Explain the significance of findings in practical terms
-4. Connect findings to the original query without using report-style framing
-5. Include specific data points where relevant
-
-Format as markdown with clear paragraph structure. Avoid formal report language like "Conclusion" or "Executive Summary". Focus on flowing prose that reads like a detailed response."""
+STRICT INSTRUCTIONS:
+1. Provide a direct, highly detailed, innovative, and thorough answer immediately.
+2. DO NOT echo or repeat the user's question ("Answer for...", "Query:", etc.).
+3. DO NOT output any metadata labels, prompt text, or debugging bullet points.
+4. Structure your response cleanly with clear markdown headings, bullet points, code snippets or tables where relevant, and actionable details that make it stand out."""
         
         try:
             response = self.llm.invoke(prompt)
@@ -242,23 +228,11 @@ Format as markdown with clear paragraph structure. Avoid formal report language 
             logger.info("Main body generated via LLM")
             return content
         except Exception as e:
-            logger.error(f"Error generating main body: {str(e)}")
-            # Provide fallback that INCLUDES ACTUAL INSIGHTS and DATA
-            insights_text = ""
-            if analysis.get('insights'):
-                insights_text = "\n\n".join(analysis.get('insights', [])[:3])
-            
-            patterns_text = ""
-            if analysis.get('patterns'):
-                patterns_text = "\nKey patterns: " + ", ".join(analysis.get('patterns', [])[:2])
-            
-            fallback = f"""The analysis of "{query}" reveals significant findings from comprehensive research.
-
-{insights_text if insights_text else "Research findings indicate patterns across the studied domain."}
-{patterns_text}
-
-The research demonstrates {analysis.get('data_quality', 'uncertain').lower()} data quality with a confidence level of {analysis.get('confidence_level', 0):.0%}, supporting the reliability of these findings for informed decision-making."""
-            return fallback
+            import traceback
+            tb = traceback.format_exc()
+            logger.error(f"Error generating main body: {str(e)}\n{tb}")
+            print(f"[WRITER_EXCEPTION] {e}\n{tb}")
+            return f"Error generating main body: {str(e)}"
     
     def _write_recommendations(
         self,
@@ -346,7 +320,7 @@ The research demonstrates {analysis.get('data_quality', 'uncertain').lower()} da
         
         conclusion = f"""## Conclusion
 
-This analysis of "{query}" provides evidence-based insights derived from comprehensive research and rigorous data analysis.
+This analysis provides evidence-based insights derived from comprehensive research and rigorous data analysis.
 
 {quality_assessment} {conf_text}
 
@@ -369,60 +343,16 @@ Moving forward, maintaining data collection practices and periodic re-analysis w
         conclusion: str,
         analysis: Dict[str, Any]
     ) -> str:
-        """Compile all sections into final draft.
+        """Compile clean final draft returning polished main_body text."""
+        if main_body and main_body.strip() and not main_body.startswith("Error"):
+            return main_body.strip()
         
-        Args:
-            query: Original query
-            executive_summary: Summary section
-            main_body: Main body section
-            recommendations: Recommendations section
-            conclusion: Conclusion section
-            analysis: Original analysis for metadata
-        
-        Returns:
-            Complete draft document
-        """
-        # Create document header
-        header = f"""# Detailed Answer
-
-**Query:** {query}
-
-**Response Type:** Detailed multi-agent answer
-
-**Analysis Confidence:** {analysis.get('confidence_level', 0):.0%}
-
----
-
-"""
-        
-        # Add metadata section
-        metadata = self._create_metadata_section(analysis)
-
-        # Create answer-first opening so the response reads like a direct answer
-        top_insights = analysis.get("insights", [])[:3]
-        answer_intro = "## Direct Answer\n\n"
-        if top_insights:
-            answer_intro += " ".join(str(item).strip() for item in top_insights if str(item).strip())
-        else:
-            answer_intro += "The analysis synthesizes the available research into a direct response to the question."
-        
-        # Compile full document
-        full_draft = (
-            header
-            + answer_intro
-            + "\n\n"
-            + executive_summary.replace("## Executive Summary", "## Brief Context")
-            + "\n\n"
-            + metadata
-            + "\n\n"
-            + main_body
-            + "\n\n"
-            + recommendations.replace("## Recommendations", "## Supporting Points")
-            + "\n\n"
-            + conclusion.replace("## Conclusion", "## Key Takeaway")
-        )
-        
-        return full_draft
+        top_insights = analysis.get("insights", [])
+        clean_insights = [str(i).strip() for i in top_insights if str(i).strip() and not str(i).startswith("Analysis completed")]
+        if clean_insights:
+            return "\n\n".join(clean_insights)
+            
+        return main_body.strip() if main_body else "No final response generated."
     
     def _create_metadata_section(self, analysis: Dict[str, Any]) -> str:
         """Create metadata/findings overview section.
