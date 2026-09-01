@@ -1,33 +1,28 @@
-# Multi-stage production Dockerfile for Backend
+# Production Dockerfile for Backend (building from backend context)
 FROM python:3.11-slim AS builder
 
 WORKDIR /app
 
-# Install build tools
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install python dependencies in a virtual environment
 RUN python -m venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-COPY backend/requirements.txt requirements.txt
+COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-# Final runtime image
 FROM python:3.11-slim AS runner
 
 WORKDIR /app
 
-# Install curl for container healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy virtualenv from builder
 COPY --from=builder /opt/venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 ENV PYTHONDONTWRITEBYTECODE=1 \
@@ -35,10 +30,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FLASK_ENV=production \
     PORT=8000
 
-# Copy application source code
-COPY backend/ /app/
+COPY . /app/
 
-# Create app directory for SQLite/checkpoints and non-root user
 RUN mkdir -p /app/data /app/logs && \
     useradd -u 1001 -m appuser && \
     chown -R appuser:appuser /app

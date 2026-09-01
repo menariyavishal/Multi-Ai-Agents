@@ -1,6 +1,7 @@
 version: '3.8'
 
 services:
+  # MongoDB Database (Optional - used if MONGODB_URI is not pointing to MongoDB Atlas)
   mongodb:
     image: mongo:7.0
     container_name: multi_ai_mongodb
@@ -17,9 +18,10 @@ services:
       timeout: 5s
       retries: 5
 
+  # Python Flask + Gunicorn 5-Agent Backend
   backend:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile.backend
     container_name: multi_ai_backend
     restart: unless-stopped
@@ -44,9 +46,10 @@ services:
       mongodb:
         condition: service_healthy
 
+  # React + Vite Frontend (Nginx Reverse Proxy)
   frontend:
     build:
-      context: ..
+      context: .
       dockerfile: docker/Dockerfile.frontend
     container_name: multi_ai_frontend
     restart: unless-stopped

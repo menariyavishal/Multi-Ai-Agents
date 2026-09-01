@@ -1,6 +1,8 @@
 # Web Framework & Server
 flask>=3.0.0                          # Lightweight web framework for REST API endpoints
+flask-cors>=4.0.0                     # Robust CORS header handling for live frontend-backend integration
 gunicorn>=21.0.0                      # Production WSGI HTTP server for deploying Flask app
+gevent>=24.0.0                        # Asynchronous worker support for high-performance SSE streaming
 
 # Configuration & Environment
 python-dotenv>=1.0.0                  # Load environment variables from .env file

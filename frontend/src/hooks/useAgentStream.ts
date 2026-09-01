@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { GraphState } from '../types/graphState';
+import { API_BASE_URL } from '../services/api';
 
 export interface StreamEvent {
   node: string;
@@ -26,10 +27,9 @@ export function useAgentStream(sessionId: string | null) {
     setError(null);
     setStreamData([]);
 
-    // Get API key since we might need to pass it in query params if headers 
-    // aren't fully supported by EventSource in all browsers for cross-origin
-    // though the proxy will help. Let's assume proxy works properly.
-    const eventSource = new EventSource(`/api/v1/stream?session_id=${sessionId}`);
+    // Construct stream URL from normalized base API URL
+    const streamUrl = `${API_BASE_URL}/stream?session_id=${encodeURIComponent(sessionId)}`;
+    const eventSource = new EventSource(streamUrl, { withCredentials: true });
 
     eventSource.onmessage = (event) => {
       try {

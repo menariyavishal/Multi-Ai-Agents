@@ -1,18 +1,25 @@
 """WSGI entry point for production deployment (Gunicorn)."""
 
 import os
+from dotenv import load_dotenv
+
+# Load .env if present
+load_dotenv()
+
 from app import create_app
 
 # Determine environment
-ENV = os.getenv("FLASK_ENV", "development")
+ENV = os.getenv("FLASK_ENV", "production")
+PORT = int(os.getenv("PORT", os.getenv("FLASK_PORT", 8000)))
+HOST = os.getenv("HOST", "0.0.0.0")
 
-# Create app
+# Create app instance
 app = create_app(config_name=ENV)
 
 if __name__ == "__main__":
-    # Development server only - use Gunicorn in production
     app.run(
-        host="0.0.0.0",
-        port=8000,
+        host=HOST,
+        port=PORT,
         debug=(ENV == "development")
     )
+

@@ -1,0 +1,55 @@
+# Render Blueprint Specification for Multi-AI Agents Full-Stack System
+services:
+  # Backend Web Service (Python Flask + Gunicorn)
+  - type: web
+    name: multi-ai-agents-backend
+    runtime: python
+    region: oregon
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn --config gunicorn.conf.py wsgi:app
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: GROQ_API_KEY
+        sync: false # Set in Render Dashboard
+      - key: MONGODB_URI
+        sync: false # Set in Render Dashboard (MongoDB Atlas cluster URI)
+      - key: MONGODB_DB_NAME
+        value: multi_ai_agents
+      - key: OPENWEATHER_API_KEY
+        sync: false
+      - key: NEWS_API_KEY
+        sync: false
+      - key: ALPHA_VANTAGE_API_KEY
+        sync: false
+      - key: GOOGLE_SEARCH_API_KEY
+        sync: false
+      - key: GOOGLE_SEARCH_ENGINE_ID
+        sync: false
+
+  # Frontend Static Site (React + Vite)
+  - type: web
+    name: multi-ai-agents-frontend
+    runtime: static
+    region: oregon
+    plan: free
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: dist
+    autoDeploy: true
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: multi-ai-agents-backend
+          property: host

@@ -1,24 +1,25 @@
-# Multi-stage production Dockerfile for Frontend (root build context)
+# Production Dockerfile for Frontend (frontend context)
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-COPY frontend/package*.json ./
+COPY package*.json ./
 RUN npm ci
 
-COPY frontend/ ./
+COPY . ./
 RUN npm run build
 
 FROM nginx:1.27-alpine AS runner
 
-# Remove default nginx html
 RUN rm -rf /usr/share/nginx/html/*
 
-# Copy built static assets
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Copy custom production nginx configuration
-COPY docker/nginx.conf /etc/nginx/nginx.conf
+# Default standard nginx SPA configuration
+RUN echo 'server {' \
+    'listen 80;' \
+    'location / { root /usr/share/nginx/html; index index.html; try_files $uri $uri/ /index.html; }' \
+    '}' > /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
 
